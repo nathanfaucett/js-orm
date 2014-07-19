@@ -1,0 +1,28 @@
+{
+  "name": "orm",
+  "version": "0.0.1",
+  "description": "orm for node.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nathanfaucett/orm.git"
+  },
+  "main": "src/index.js",
+  "keywords": [
+    "orm",
+    "orm.js"
+  ],
+  "author": "Nathan Faucett",
+  "license": "BSD-2-Clause",
+  "readmeFilename": "README.md",
+  "devDependencies": {
+    "grunt": "",
+    "grunt-jsbeautifier": ""
+  },
+  "dependencies": {
+    "utils": "nathanfaucett/utils",
+    "validator": "nathanfaucett/validator",
+    "event_emitter": "nathanfaucett/event_emitter",
+    "inflect": "nathanfaucett/inflect"
+  }
+}
+
