@@ -1,7 +1,7 @@
 {
   "name": "orm",
   "version": "0.0.1",
-  "description": "orm for node.js",
+  "description": "object relational mapping for node.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/nathanfaucett/orm.git"
@@ -19,10 +19,13 @@
     "grunt-jsbeautifier": ""
   },
   "dependencies": {
-    "utils": "nathanfaucett/utils",
-    "validator": "nathanfaucett/validator",
     "event_emitter": "nathanfaucett/event_emitter",
-    "inflect": "nathanfaucett/inflect"
+    "file_path": "nathanfaucett/file_path",
+    "file_utils": "nathanfaucett/file_utils",
+    "inflect": "nathanfaucett/inflect",
+    "promise": "nathanfaucett/promise",
+    "sqlite3": "^2.2.4",
+    "utils": "nathanfaucett/utils",
+    "validator": "nathanfaucett/validator"
   }
 }
-

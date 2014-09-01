@@ -1,0 +1,61 @@
+{
+  "carts": {
+    "title": {
+      "default": "",
+      "type": "string"
+    },
+    "content": {
+      "default": "",
+      "type": "string"
+    },
+    "id": {
+      "primaryKey": true,
+      "autoIncrement": true,
+      "type": "integer"
+    },
+    "createdAt": {
+      "defaultsTo": "NOW",
+      "type": "datetime"
+    },
+    "updatedAt": {
+      "defaultsTo": "NOW",
+      "type": "datetime"
+    }
+  },
+  "users": {
+    "firstName": {
+      "type": "string"
+    },
+    "lastName": {
+      "type": "string"
+    },
+    "email": {
+      "default": "",
+      "null": false,
+      "type": "string"
+    },
+    "encryptedPassword": {
+      "default": "",
+      "null": false,
+      "type": "string"
+    },
+    "username": {
+      "default": "",
+      "null": false,
+      "type": "string"
+    },
+    "id": {
+      "primaryKey": true,
+      "autoIncrement": true,
+      "type": "integer"
+    },
+    "createdAt": {
+      "defaultsTo": "NOW",
+      "type": "datetime"
+    },
+    "updatedAt": {
+      "defaultsTo": "NOW",
+      "type": "datetime"
+    }
+  }
+}

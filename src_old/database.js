@@ -8,6 +8,11 @@ function Database(collection) {
     this.adaptor = null;
 }
 
+Database.prototype.init = function(callback) {
+
+    return this.adaptor.init(this.collection, callback);
+};
+
 Database.prototype.toModel = function(rows) {
     if (!utils.isArray(rows)) return this.collection.new(rows);
     var collection = this.collection,
@@ -27,11 +32,9 @@ Database.prototype.save = function(model, callback) {
                 return;
             }
 
-            row = _this.toModel(row);
-            _this.collection.emit("save", row);
-            callback(null, row);
+            callback(null, _this.toModel(row));
         });
-        return undefined;
+        return null;
     }
 
     return new Promise(function(resolve, reject) {
@@ -41,9 +44,7 @@ Database.prototype.save = function(model, callback) {
                 return;
             }
 
-            row = _this.toModel(row);
-            _this.collection.emit("save", row);
-            resolve(row);
+            resolve(_this.toModel(row));
         });
     });
 };
@@ -58,11 +59,9 @@ Database.prototype.update = function(model, callback) {
                 return;
             }
 
-            row = _this.toModel(row);
-            _this.collection.emit("update", row);
-            callback(null, row);
+            callback(null, _this.toModel(row));
         });
-        return undefined;
+        return null;
     }
 
     return new Promise(function(resolve, reject) {
@@ -72,9 +71,7 @@ Database.prototype.update = function(model, callback) {
                 return;
             }
 
-            row = _this.toModel(row);
-            _this.collection.emit("update", row);
-            resolve(row);
+            resolve(_this.toModel(row));
         });
     });
 };
@@ -91,7 +88,7 @@ Database.prototype.all = function(callback) {
 
             callback(null, _this.toModel(rows));
         });
-        return undefined;
+        return null;
     }
 
     return new Promise(function(resolve, reject) {
@@ -118,7 +115,7 @@ Database.prototype.find = function(where, callback) {
 
             callback(null, _this.toModel(rows));
         });
-        return undefined;
+        return null;
     }
 
     return new Promise(function(resolve, reject) {
@@ -145,7 +142,7 @@ Database.prototype.findOne = function(where, callback) {
 
             callback(null, _this.toModel(row));
         });
-        return undefined;
+        return null;
     }
 
     return new Promise(function(resolve, reject) {
@@ -172,7 +169,7 @@ Database.prototype.findById = function(id, callback) {
 
             callback(null, _this.toModel(row));
         });
-        return undefined;
+        return null;
     }
 
     return new Promise(function(resolve, reject) {
@@ -197,11 +194,9 @@ Database.prototype.delete = function(id, callback) {
                 return;
             }
 
-            row = _this.toModel(row);
-            _this.collection.emit("delete", row);
-            callback(null, row);
+            callback(null, _this.toModel(row));
         });
-        return undefined;
+        return null;
     }
 
     return new Promise(function(resolve, reject) {
@@ -211,9 +206,7 @@ Database.prototype.delete = function(id, callback) {
                 return;
             }
 
-            row = _this.toModel(row);
-            _this.collection.emit("delete", row);
-            resolve(row);
+            resolve(_this.toModel(row));
         });
     });
 };
@@ -228,11 +221,9 @@ Database.prototype.deleteWhere = function(where, callback) {
                 return;
             }
 
-            rows = _this.toModel(rows);
-            _this.collection.emit("deleteWhere", rows);
-            callback(null, rows);
+            callback(null, _this.toModel(rows));
         });
-        return undefined;
+        return null;
     }
 
     return new Promise(function(resolve, reject) {
@@ -242,9 +233,7 @@ Database.prototype.deleteWhere = function(where, callback) {
                 return;
             }
 
-            rows = _this.toModel(rows);
-            _this.collection.emit("deleteWhere", rows);
-            resolve(rows);
+            resolve(_this.toModel(rows));
         });
     });
 };
@@ -259,11 +248,9 @@ Database.prototype.deleteAll = function(callback) {
                 return;
             }
 
-            rows = _this.toModel(rows);
-            _this.collection.emit("deleteAll", rows);
-            callback(null, rows);
+            callback(null, _this.toModel(rows));
         });
-        return undefined;
+        return null;
     }
 
     return new Promise(function(resolve, reject) {
@@ -273,12 +260,9 @@ Database.prototype.deleteAll = function(callback) {
                 return;
             }
 
-            rows = _this.toModel(rows);
-            _this.collection.emit("deleteAll", rows);
-            resolve(rows);
+            resolve(_this.toModel(rows));
         });
     });
 };
-
 
 module.exports = Database;

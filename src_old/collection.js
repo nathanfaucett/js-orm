@@ -1,40 +1,36 @@
 var utils = require("utils"),
     inflect = require("inflect"),
-    Promise = require("promise"),
-    validator = require("validator"),
-    EventEmitter = require("event_emitter"),
 
-    Database = require("./database");
+    Datebase = require("./database");
 
 
 function Collection(ctx, options) {
-    utils.isHash(options) || (options = {});
+    options || (options = {});
 
-    EventEmitter.call(this);
+    if (!utils.isString(options.name)) {
+        throw new Error("Collection(name) name required as a string");
+    }
 
     this.ctx = ctx;
     this.adaptor = options.adaptor || ctx.defaultAdaptor;
+    this.database = new Datebase(this);
 
-    this.autoPK = options.autoPK != null ? !!options.autoPK : true;
-
-    this.name = options.name;
+    this.name = inflect.classify(options.name, options.locale);
     this.tableName = utils.isString(options.tableName) ? options.tableName : inflect.tableize(this.name, options.locale);
 
-    this.primaryKeyFormat = utils.isString(options.primaryKeyFormat) ? options.primaryKeyFormat : "integer";
+    this.primaryKeyFormat = options.primaryKeyFormat != null ? options.primaryKeyFormat : "integer";
     this.hasSchema = options.hasSchema != null ? !!options.hasSchema : true;
 
+    this.validations = {};
     this.prototype = {};
-    this.schema = ctx.schema.getTable(this.tableName);
 
-    this.database = new Database(this);
-
+    this.attributes = null;
     this.Model = null;
 }
-EventEmitter.extend(Collection);
 
 Collection.prototype.init = function() {
     if (utils.isString(this.adaptor)) {
-        this.adaptor = this.ctx.getAdaptor(this.adaptor);
+        this.adaptor = this.ctx.adaptors.get(this.adaptor);
     }
 
     this.database.adaptor = this.adaptor;
@@ -48,8 +44,8 @@ Collection.prototype.new = function(attributes) {
 
     if (utils.isObject(attributes)) {
         utils.keys(model).forEach(function(key) {
-            var attribute = attributes[key];
-            if (!(attribute === undefined || attribute === null)) model[key] = attribute;
+            attribute = attributes[key];
+            if (attribute != null) model[key] = attribute;
         });
     }
 
@@ -62,9 +58,12 @@ Collection.prototype.create = function(attributes, callback) {
 };
 
 Collection.prototype.save = function(model, callback) {
-    var errors = this.validate(model);
+    var errors;
 
-    if (errors) {
+    this.filter(model);
+    errors = this.validate(model);
+
+    if (errors != null) {
         if (utils.isFunction(callback)) {
             callback(errors);
             return undefined;
@@ -77,9 +76,12 @@ Collection.prototype.save = function(model, callback) {
 };
 
 Collection.prototype.update = function(model, callback) {
-    var errors = this.validate(model);
+    var errors;
 
-    if (errors) {
+    this.filter(model);
+    errors = this.validate(model);
+
+    if (errors != null) {
         if (utils.isFunction(callback)) {
             callback(errors);
             return undefined;
@@ -88,7 +90,7 @@ Collection.prototype.update = function(model, callback) {
         }
     }
 
-    return this.database.update(model, callback);
+    return this.database.save(model, callback);
 };
 
 Collection.prototype.all = function(callback) {
@@ -129,54 +131,43 @@ Collection.prototype.deleteAll = function(callback) {
 };
 
 Collection.prototype.filter = function(values) {
-    var has = utils.has,
+    if (!this.hasSchema) return;
+    var attributes = this.attributes;
 
-        schema = this.schema,
-        key;
-
-    if (!this.hasSchema) return values;
-
-    for (key in values) {
-        if (!has(schema, key)) delete values[key];
+    for (var key in values) {
+        if (!attributes[key]) delete values[key];
     }
-
-    return values;
 };
 
 Collection.prototype.validate = function(values) {
-    var has = utils.has,
-        isFunction = utils.isFunction,
-        match = validator.match,
-
-        schema = this.schema,
+    var attributes = this.attributes,
         validations = this.validations,
-        errors = null,
-        validation, value, args, attribute, defaultsTo, error, name, rule;
+        errors, validation, value, args, attribute, defaultsTo, error;
 
     this.filter(values);
 
-    for (name in validations) {
-        attribute = schema[name];
+    for (var name in validations) {
+        attribute = attributes[name];
         validation = validations[name];
         value = values[name];
 
         if (value == null && (defaultsTo = attribute.defaultsTo)) {
-            if (isFunction(defaultsTo)) {
+            if (utils.isFunction(defaultsTo)) {
                 value = values[key] = defaultsTo();
             } else {
                 value = values[key] = defaultsTo;
             }
         }
 
-        if (!value && !has(validation, "required")) continue;
+        if (!value && !utils.has(validation, "required")) continue;
 
-        for (rule in validation) {
+        for (var rule in validation) {
             args = validation[rule];
 
             if (typeof(args) !== "boolean") {
-                error = match(rule, value, args);
+                error = validator.match(rule, value, args);
             } else {
-                error = match(rule, value);
+                error = validator.match(rule, value);
             }
 
             if (error) {
@@ -207,7 +198,7 @@ Collection.prototype.generateModel = function() {
 
 function generateModelAttributes(collection) {
     var out = [],
-        attributes = collection.schema,
+        attributes = collection.attributes,
         attribute;
 
     for (var name in attributes) {
@@ -221,10 +212,13 @@ function generateModelAttributes(collection) {
 function generateModelPrototype(collection) {
     var out = [],
         className = collection.name,
+        prototype = collection.prototype,
         fn;
 
-    out.push(className + ".prototype = utils.create(collection.prototype);");
-    out.push(className + ".prototype.constructor = " + className + ";");
+    for (var name in prototype) {
+        fn = prototype[name];
+        out.push(className + ".prototype." + name + " = " + fn.toString() + ";");
+    }
 
     out.push(className + ".prototype.save = function (callback) {\n\treturn collection.save(this, callback);\n};");
     out.push(className + ".prototype.update = function (callback) {\n\treturn collection.update(this, callback);\n};");

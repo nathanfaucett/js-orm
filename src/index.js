@@ -2,72 +2,116 @@ var utils = require("utils"),
     inflect = require("inflect"),
     EventEmitter = require("event_emitter"),
 
-    Collection = require("./collection");
+    Schema = require("./schema"),
+    Migrations = require("./migrations"),
+    Collection = require("./collection"),
+
+    SQLiteAdaptor = require("./sqlite_adaptor");
 
 
-function ORM() {
+function ORM(options) {
+    options || (options = {});
 
     EventEmitter.call(this);
 
-    this.autoMigrate = true;
+    this.defaultAdaptor = options.defaultAdaptor;
+    this.defaultPrimaryKeyFormat = options.defaultPrimaryKeyFormat || "integer";
 
-    this.adaptors = {};
-    this.collections = {};
+    this.schema = new Schema(this, options.schema);
+    this.migrations = new Migrations(this, options.migrations);
+    this.collections = utils.create(null);
+    this.adaptors = utils.create(null);
+
+    if (utils.isObject(options.adaptors)) {
+        var adaptors = options.adaptors;
+        for (var key in adaptors) this.addAdaptor(key, adaptors[key]);
+    }
 }
 EventEmitter.extend(ORM);
 
-ORM.prototype.init = function(callback) {
-    var _this = this,
-        collections = this.collections,
-        length = Object.keys(collections).length;
+ORM.SQLiteAdaptor = SQLiteAdaptor;
 
-    function done(err) {
+ORM.prototype.init = function(callback) {
+    var _this = this;
+
+    this.schema.init(function(err) {
         if (err) {
-            if (!callback && _this.listeners("init") === 0) throw new Error("ORM.init([callback]) failed to init with error:\n" + err.stack);
-            callback && callback(err);
-            _this.emit("init", err);
+            callback(err);
             return;
         }
 
-        if (--length === 0) {
-            callback && callback();
-            _this.emit("init");
-        }
-    }
+        utils.async(
+            utils.values(_this.adaptors).map(function(adaptor) {
+                return function(next) {
+                    adaptor.init(next);
+                };
+            }),
+            function(err) {
+                if (err) {
+                    callback(err);
+                    return;
+                }
 
-    for (var tableName in collections) collections[tableName].init(done);
+                utils.each(_this.collections, function(collection) {
+                    collection.init();
+                });
 
-    return this;
+                callback();
+            }
+        );
+    });
 };
 
-ORM.prototype.adaptor = function(name, adaptor) {
-    if (adaptor == null) {
-        adaptor = name;
-        name = adaptor.name;
-    }
-    if (!utils.isString(name)) throw new Error("ORM.adaptor(name, adaptor) name required as a string, or adaptor does not have a name property");
+ORM.prototype.define = function(name, options) {
+    var collections = this.collections,
+        tableName;
 
-    this.adaptors[name] = adaptor;
-    return adaptor;
-};
-
-ORM.prototype.define = function(options) {
-    options || (options = {});
-    if (!utils.isString(options.name)) throw new Error("ORM.define(options) options.name required as a string");
-
-    var name = (options.name = inflect.classify(options.name, options.locale)),
-        tableName = utils.isString(options.tableName) ? options.tableName : (options.tableName = inflect.tableize(name, options.locale)),
-        collections = this.collections,
-        index = collections[tableName],
-        collection = null;
-
-    if (!index) {
-        collection = collections[tableName] = new Collection(this, options);
+    if (utils.isHash(name)) {
+        options = name;
+        name = options.name;
     } else {
-        throw new Error("ORM.define(options) " + tableName + " already member of ORM");
+        options || (options = {});
+        options.name = name;
     }
 
+    if (!utils.isString(options.name)) throw new Error("ORM.define(name, options) name must be a string");
+    if (!utils.isHash(options)) throw new Error("ORM.define(name, options) options must be an object");
+    if (collections[name]) throw new Error("ORM.define(name, options) Collection " + name + " already defined");
+
+    tableName = options.tableName = utils.isString(options.tableName) ? options.tableName : inflect.tableize(options.name, options.locale);
+    name = options.name = inflect.classify(options.name, options.locale);
+
+    return (collections[name] = collections[tableName] = new Collection(this, options));
+};
+
+ORM.prototype.getCollection = function(name) {
+    var collection = this.collections[name];
+
+    if (!collection) throw new Error("ORM.getCollection(name) no collection defined named " + name);
     return collection;
 };
 
-module.exports = new ORM();
+ORM.prototype.addAdaptor = function(name, adaptor) {
+    var adaptors = this.adaptors;
+
+    if (utils.isObject(name)) {
+        adaptor = name;
+        name = adaptor.name;
+    }
+
+    if (!utils.isString(name)) throw new Error("ORM.addAdaptor(name, adaptor) name must be a string");
+    if (!utils.isObject(adaptor)) throw new Error("ORM.addAdaptor(name, adaptor) adaptor must be an object");
+    if (adaptors[name]) throw new Error("ORM.addAdaptor(name, adaptor) Adaptor " + name + " already added");
+
+    return (adaptors[name] = adaptor);
+};
+
+ORM.prototype.getAdaptor = function(name) {
+    var adaptor = this.adaptors[name];
+
+    if (!adaptor) throw new Error("ORM.getAdaptor(name) no adaptor found named " + name);
+    return adaptor;
+};
+
+
+module.exports = ORM;
