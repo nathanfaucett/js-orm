@@ -1,25 +1,29 @@
 {
   "carts": {
+    "userId": {
+      "type": "integer",
+      "foreignKey": true
+    },
     "title": {
-      "type": "string",
-      "default": ""
+      "default": "",
+      "type": "string"
     },
     "content": {
-      "type": "string",
-      "default": ""
+      "default": "",
+      "type": "string"
     },
     "id": {
-      "type": "integer",
+      "primaryKey": true,
       "autoIncrement": true,
-      "primaryKey": true
+      "type": "integer"
     },
     "createdAt": {
-      "type": "datetime",
-      "defaultsTo": "NOW"
+      "defaultsTo": "NOW",
+      "type": "datetime"
     },
     "updatedAt": {
-      "type": "datetime",
-      "defaultsTo": "NOW"
+      "defaultsTo": "NOW",
+      "type": "datetime"
     }
   },
   "users": {
@@ -30,32 +34,32 @@
       "type": "string"
     },
     "email": {
-      "type": "string",
+      "default": "",
       "null": false,
-      "default": ""
+      "type": "string"
     },
     "encryptedPassword": {
-      "type": "string",
+      "default": "",
       "null": false,
-      "default": ""
+      "type": "string"
     },
     "username": {
-      "type": "string",
+      "default": "",
       "null": false,
-      "default": ""
+      "type": "string"
     },
     "id": {
-      "type": "integer",
+      "primaryKey": true,
       "autoIncrement": true,
-      "primaryKey": true
+      "type": "integer"
     },
     "createdAt": {
-      "type": "datetime",
-      "defaultsTo": "NOW"
+      "defaultsTo": "NOW",
+      "type": "datetime"
     },
     "updatedAt": {
-      "type": "datetime",
-      "defaultsTo": "NOW"
+      "defaultsTo": "NOW",
+      "type": "datetime"
     }
   }
 }

@@ -95,33 +95,21 @@ SQLiteAdaptor.prototype.dropTable = function(name, callback) {
     return this;
 };
 
-SQLiteAdaptor.prototype.changeTable = function(name, options, callback) {
-
-    callback(new Error("changeTable(name, options, callback) " + this.name + " not implemented"));
-    return this;
-};
-
 SQLiteAdaptor.prototype.renameTable = function(oldName, newName, callback) {
 
-    callback(new Error("renameTable(oldName, newName, callback) " + this.name + " not implemented"));
+    this.sql.exec("ALTER TABLE " + oldName + " RENAME TO " + newName + ";", callback);
     return this;
 };
 
-SQLiteAdaptor.prototype.addColumn = function(tableName, columnName, attributes, callback) {
+SQLiteAdaptor.prototype.addColumn = function(tableName, columnName, attribute, callback) {
 
-    callback(new Error("addColumn(tableName, columnName, attributes, callback) " + this.name + " not implemented"));
+    this.sql.exec("ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + propertyToSQL(attribute) + ";", callback);
     return this;
 };
 
 SQLiteAdaptor.prototype.renameColumn = function(tableName, columnName, newColumnName, callback) {
 
-    callback(new Error("renameColumn(tableName, columnName, newColumnName, callback) " + this.name + " not implemented"));
-    return this;
-};
-
-SQLiteAdaptor.prototype.changeColumn = function(tableName, columnName, options, callback) {
-
-    callback(new Error("renameColumn(tableName, columnName, options, callback) " + this.name + " not implemented"));
+    this.sql.exec("ALTER TABLE " + tableName + " RENAME TO " + columnName + " " + newColumnName + ";", callback);
     return this;
 };
 

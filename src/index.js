@@ -81,7 +81,7 @@ ORM.prototype.define = function(name, options) {
     tableName = options.tableName = utils.isString(options.tableName) ? options.tableName : inflect.tableize(options.name, options.locale);
     name = options.name = inflect.classify(options.name, options.locale);
 
-    return (collections[name] = collections[tableName] = new Collection(this, options));
+    return (collections[name] = collections[name.toLowerCase()] = collections[tableName] = new Collection(this, options));
 };
 
 ORM.prototype.getCollection = function(name) {

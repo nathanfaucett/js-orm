@@ -280,7 +280,9 @@ Schema.prototype.hasMany = function(tableName, attribute, options) {
     column.type = parseType(collection.primaryKeyFormat || this.ctx.defaultPrimaryKeyFormat || "integer");
     column.foreignKey = true;
 
-    parsed[columnName] = utils.copy(column);
+    parsed.columnName = columnName;
+    parsed.attributes = utils.copy(column);
+
     return parsed;
 };
 
@@ -299,7 +301,9 @@ Schema.prototype.hasOne = function(tableName, attribute, options) {
     column.type = parseType(collection.primaryKeyFormat || this.ctx.defaultPrimaryKeyFormat || "integer");
     column.foreignKey = true;
 
-    parsed[columnName] = utils.copy(column);
+    parsed.columnName = columnName;
+    parsed.attributes = utils.copy(column);
+
     return parsed;
 };
 
@@ -312,13 +316,15 @@ Schema.prototype.belongsTo = function(tableName, attribute, options) {
             options.camelized != null ? !!options.camelized : true,
             true
         ),
-        column = this.getColumn(otherCollection.tableName, columnName),
+        column = this.getColumn(collection.tableName, columnName),
         parsed = utils.create(null);
 
     column.type = parseType(collection.primaryKeyFormat || this.ctx.defaultPrimaryKeyFormat || "integer");
     column.foreignKey = true;
 
-    parsed[columnName] = utils.copy(column);
+    parsed.columnName = columnName;
+    parsed.attributes = utils.copy(column);
+
     return parsed;
 };
 

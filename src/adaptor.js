@@ -80,12 +80,6 @@ Adaptor.prototype.dropTable = function(tableName, callback) {
     return this;
 };
 
-Adaptor.prototype.changeTable = function(tableName, attributes, callback) {
-
-    callback(new Error("changeTable(tableName, attributes, callback) " + this.name + " not implemented"));
-    return this;
-};
-
 Adaptor.prototype.renameTable = function(oldName, newName, callback) {
 
     callback(new Error("renameTable(oldName, newName, callback) Adtor " + this.name + " not implemented"));
@@ -101,12 +95,6 @@ Adaptor.prototype.addColumn = function(tableName, columnName, attributes, callba
 Adaptor.prototype.renameColumn = function(tableName, columnName, newColumnName, callback) {
 
     callback(new Error("renameColumn(tableName, columnName, newColumnName, callback) " + this.name + " not implemented"));
-    return this;
-};
-
-Adaptor.prototype.changeColumn = function(tableName, columnName, attributes, callback) {
-
-    callback(new Error("renameColumn(tableName, columnName, attributes, callback) " + this.name + " not implemented"));
     return this;
 };
 

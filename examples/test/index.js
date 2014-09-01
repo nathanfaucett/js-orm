@@ -11,7 +11,7 @@ db.init(function(err) {
     }
 
     console.time("find");
-    User.findById(3).then(
+    User.all().then(
         function(users) {
             console.log(users);
             console.timeEnd("find");

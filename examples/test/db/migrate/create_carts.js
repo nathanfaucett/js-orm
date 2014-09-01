@@ -10,6 +10,7 @@ exports.up = function(migrate) {
             default: ""
         },
 
+        belongsTo: "user",
         timestamps: true
     });
 };
