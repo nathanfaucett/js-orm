@@ -8,8 +8,17 @@ var fs = require("fs"),
     Migrate = require("./migrate");
 
 
-var SPLITER = /(?:([0-9]+)\_)?([a-zA-Z]+)\_([a-zA-Z]+)/;
+var SPLITER = /(?:([0-9]+)\_)?([a-zA-Z]+)\_([a-zA-Z]+)/,
+    HR_TIME = process.hrtime();
 
+
+function now() {
+    var hrtime = process.hrtime(HR_TIME),
+        s = hrtime[0],
+        ns = hrtime[1] * 1e-9;
+
+    return s + ns;
+}
 
 function Migration(fullPath) {
     var parts = filePath.base(fullPath).match(SPLITER);
@@ -38,17 +47,38 @@ function Migrations(ctx, options) {
 }
 EventEmitter.extend(Migrations);
 
-Migrations.prototype.init = function(callback) {
+Migrations.prototype.init = function(options, callback) {
     var migrations = this.migrations;
+
+    if (utils.isFunction(options)) {
+        callback = options;
+        options = {};
+    }
+    options || (options = {});
+
+    if (options.before) {
+        if (options.before === "now") {
+            options.before = Date.now();
+        }
+    }
+    if (options.after) {
+        if (options.after === "now") {
+            options.after = Date.now();
+        }
+    }
 
     fileUtils.dive(this.folder,
         function(err, fullName) {
+            var migration;
+
             if (err) {
                 callback(err);
                 return false;
             }
 
-            migrations.push(new Migration(fullName));
+            migration = new Migration(fullName);
+            migrations.push(migration);
+
             return true;
         },
         function() {
@@ -68,17 +98,17 @@ Migrations.prototype.clear = function() {
     return this;
 };
 
-Migrations.prototype.up = function(callback) {
+Migrations.prototype.up = function(options, callback) {
 
-    return Migrations_run(this, "up", callback);
+    return Migrations_run(this, "up", options, callback);
 };
 
-Migrations.prototype.down = function(callback) {
+Migrations.prototype.down = function(options, callback) {
 
-    return Migrations_run(this, "down", callback);
+    return Migrations_run(this, "down", options, callback);
 };
 
-function Migrations_run(_this, type, callback) {
+function Migrations_run(_this, type, options, callback) {
 
     function cb(errs) {
 
@@ -92,8 +122,11 @@ function Migrations_run(_this, type, callback) {
         _this.ctx.schema.save(callback);
     }
 
-    return _this.init(function(err) {
-        var ctx = _this.ctx,
+    options || (options = {});
+
+    return _this.init(options, function(err) {
+        var verbose = options.verbose,
+            ctx = _this.ctx,
             migrate = _this.migrate,
             migrations = _this.migrations,
             tasks = _this.tasks,
@@ -140,12 +173,17 @@ function Migrations_run(_this, type, callback) {
         }
 
         utils.each(tasks, function(task) {
-            var adaptor = task.adaptor;
+            var adaptor = task.adaptor,
+                start;
 
             task.args.push(function(err) {
                 if (err) {
                     (errors || (errors = [])).push(err);
+                } else {
+                    task.ms = now() - start;
+                    if (verbose !== false) console.log(task.toString());
                 }
+
                 if (--length === 0) {
                     cb(errors);
                 }
@@ -153,6 +191,7 @@ function Migrations_run(_this, type, callback) {
 
             if (adaptor) {
                 if (utils.isFunction(adaptor[task.name])) {
+                    start = now();
                     adaptor[task.name].apply(adaptor, task.args);
                 } else {
                     cb([new Error("collection " + task.collection.name + " adaptor with name " + adaptor.name + " has no function " + task.name)]);

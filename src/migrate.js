@@ -10,9 +10,33 @@ function Task(order, name, args, adaptor, collection) {
     this.order = order;
     this.name = name;
     this.args = args;
+    this.ms = 0;
     this.adaptor = adaptor;
     this.collection = collection;
 }
+
+function argsToString(args) {
+    var out = [],
+        i = 0,
+        il = args.length,
+        arg;
+
+    for (; i < il; i++) {
+        arg = args[i];
+        if (utils.isString(arg) || utils.isNumber(arg)) out.push(arg);
+    }
+
+    return out.join(", ");
+}
+
+Task.prototype.toString = function() {
+    return (
+        "=================================================\n" +
+        "-- " + this.name + "(" + argsToString(this.args) + ")\n" +
+        "   -> " + this.ms + "s\n" +
+        "=================================================\n"
+    );
+};
 
 
 function Migrate(ctx) {
