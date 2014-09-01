@@ -109,13 +109,13 @@ SQLiteAdaptor.prototype.addColumn = function(tableName, columnName, attribute, c
 
 SQLiteAdaptor.prototype.renameColumn = function(tableName, columnName, newColumnName, callback) {
 
-    this.sql.exec("ALTER TABLE " + tableName + " RENAME TO " + columnName + " " + newColumnName + ";", callback);
+    callback(new Error("renameColumn(tableName, columnName, newColumnName, callback) " + this.name + " not implemented"));
     return this;
 };
 
 SQLiteAdaptor.prototype.removeColumn = function(tableName, columnName, options, callback) {
 
-    callback(new Error("removeColumn(tableName, columnName, options, callback) " + this.name + " not implemented"));
+    this.sql.exec("ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + propertyToSQL(attribute) + ";", callback);
     return this;
 };
 

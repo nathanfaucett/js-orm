@@ -44,13 +44,18 @@ Collection.prototype.init = function() {
 };
 
 Collection.prototype.new = function(attributes) {
-    var model = new this.Model;
+    var model = new this.Model,
+        keys, key, attribute, i;
 
     if (utils.isObject(attributes)) {
-        utils.keys(model).forEach(function(key) {
-            var attribute = attributes[key];
+        keys = utils.keys(model);
+        i = keys.length;
+
+        while (i--) {
+            key = keys[i];
+            attribute = attributes[key];
             if (!(attribute === undefined || attribute === null)) model[key] = attribute;
-        });
+        }
     }
 
     return model;
