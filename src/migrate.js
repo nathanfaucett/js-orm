@@ -31,8 +31,51 @@ function Migrate_createTask(_this, order, name) {
     return _this;
 };
 
+function Migrate_parseFunctions(_this, tableName, attributes, options) {
+    options || (options = {});
+
+    if (utils.has(attributes, "hasMany")) {
+        Migrate_hasMany(_this, tableName, attributes.hasMany, options);
+        delete attributes.hasMany;
+    }
+    if (utils.has(attributes, "hasOne")) {
+        Migrate_hasOne(_this, tableName, attributes.hasOne, options);
+        delete attributes.hasOne;
+    }
+    if (utils.has(columns, "belongsTo")) {
+        Migrate_belongsTo(_this, tableName, attributes.belongsTo, options);
+        delete attributes.belongsTo;
+    }
+}
+
+function Migrate_hasMany(_this, tableName, attribute, options) {
+    var attributes = _this.ctx.schema.hasMany(tableName, attribute, options);
+
+    return _this.changeTable(tableName, attributes, options);
+}
+
+function Migrate_hasOne(_this, tableName, attribute, options) {
+    var attributes = _this.ctx.schema.hasOne(tableName, attribute, options);
+
+    return _this.changeTable(tableName, attributes, options);
+}
+
+function Migrate_belongsTo(_this, tableName, attribute, options) {
+    var attributes = _this.ctx.schema.belongsTo(tableName, attribute, options),
+        otherTableName;
+
+    if (utils.isString(attribute)) {
+        otherTableName = inflect.pluralize(attribute, options.locale);
+    } else if (utils.isString(attribute.model)) {
+        otherTableName = attribute.model;
+    }
+
+    return _this.changeTable(otherTableName, attributes, options);
+}
+
 Migrate.prototype.createTable = function(tableName, attributes, options) {
 
+    Migrate_parseFunctions(this, tableName, attributes, options);
     attributes = this.ctx.schema.createTable(tableName, attributes || {}, options);
 
     return Migrate_createTask(this, 0, "createTable", tableName, attributes);
@@ -47,6 +90,7 @@ Migrate.prototype.dropTable = function(tableName) {
 
 Migrate.prototype.changeTable = function(tableName, attributes, options) {
 
+    Migrate_parseFunctions(this, tableName, attributes, options);
     attributes = this.ctx.schema.createTable(tableName, attributes || {}, options);
 
     return Migrate_createTask(this, 2, "changeTable", tableName, attributes);
@@ -59,13 +103,15 @@ Migrate.prototype.renameTable = function(oldName, newName) {
     return Migrate_createTask(this, 3, "renameTable", oldName, newName);
 };
 
-Migrate.prototype.addColumn = function(tableName, columnName, type, attributes) {
+Migrate.prototype.addColumn = function(tableName, columnName, type, attributes, options) {
     if (utils.isObject(type)) {
+        options = attributes;
         attributes = type;
         type = attributes.type;
     }
     attributes || (attributes = {});
 
+    Migrate_parseFunctions(this, tableName, attributes, options);
     attributes = this.ctx.schema.createColumn(tableName, columnName, attributes);
 
     return Migrate_createTask(this, 4, "addColumn", tableName, columnName, attributes);
@@ -78,13 +124,15 @@ Migrate.prototype.renameColumn = function(tableName, columnName, newColumnName) 
     return Migrate_createTask(this, 5, "renameColumn", tableName, columnName, newColumnName);
 };
 
-Migrate.prototype.changeColumn = function(tableName, columnName, type, attributes) {
+Migrate.prototype.changeColumn = function(tableName, columnName, type, attributes, options) {
     if (utils.isObject(type)) {
+        options = attributes;
         attributes = type;
         type = attributes.type;
     }
     attributes || (attributes = {});
 
+    Migrate_parseFunctions(this, tableName, attributes, options);
     attributes = this.ctx.schema.createColumn(tableName, columnName, attributes);
 
     return Migrate_createTask(this, 6, "changeColumn", tableName, columnName, attributes);

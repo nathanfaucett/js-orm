@@ -85,8 +85,6 @@ SQLiteAdaptor.prototype.deleteAll = function(name, callback) {
 
 SQLiteAdaptor.prototype.createTable = function(name, options, callback) {
 
-    console.log("CREATE TABLE IF NOT EXISTS " + name + "(\n" + parseTable(options) + "\n);");
-
     this.sql.exec("CREATE TABLE IF NOT EXISTS " + name + "(\n" + parseTable(options) + "\n);", callback);
     return this;
 };
@@ -281,7 +279,7 @@ function propertyToSQL(attribute) {
                 out.push("NOT NULL");
             }
         } else if (key === "type") {
-            out.unshift(dataType(attribute));
+            out.push(dataType(attribute));
         }
     }
 

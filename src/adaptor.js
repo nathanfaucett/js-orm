@@ -4,6 +4,7 @@ var utils = require("utils");
 function Adaptor(options) {
     options || (options = {});
 
+    this.ctx = null;
     this.name = utils.isString(options.name) ? options.name : "adaptor";
 }
 

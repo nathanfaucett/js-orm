@@ -156,6 +156,8 @@ Schema.prototype.createTable = function(tableName, columns, options) {
         collection = this.ctx.getCollection(tableName),
         columnName, column, parsedColumn, hasPK, createdAt, updatedAt;
 
+    options || (options = {});
+
     for (columnName in columns) {
         if (has(columns[columnName], "primaryKey")) hasPK = true;
     }
@@ -169,7 +171,7 @@ Schema.prototype.createTable = function(tableName, columns, options) {
     }
 
     if (has(columns, "timestamps")) {
-        if (options && options.underscore === true) {
+        if (options.underscore === true) {
             createdAt = "created_at";
             updatedAt = "updated_at";
         } else {
@@ -191,6 +193,19 @@ Schema.prototype.createTable = function(tableName, columns, options) {
         }
 
         delete columns.timestamps;
+    }
+
+    if (has(columns, "hasMany")) {
+        this.hasMany(tableName, columns.hasMany, options);
+        delete columns.hasMany;
+    }
+    if (has(columns, "hasOne")) {
+        this.hasOne(tableName, columns.hasOne, options);
+        delete columns.hasOne;
+    }
+    if (has(columns, "belongsTo")) {
+        this.belongsTo(tableName, columns.belongsTo, options);
+        delete columns.belongsTo;
     }
 
     for (columnName in columns) {
@@ -249,6 +264,77 @@ Schema.prototype.removeColumnAttributes = function(tableName, columnName, attrib
 
     return parsed;
 };
+
+Schema.prototype.hasMany = function(tableName, attribute, options) {
+    var collection = findCollection(this, tableName),
+        otherCollection = findCollection(this, attribute),
+        columnName = inflect.foreignKey(
+            inflect.singularize(otherCollection.tableName, options.locale),
+            options.key || "id",
+            options.camelized != null ? !!options.camelized : true,
+            true
+        ),
+        column = this.getColumn(collection.tableName, columnName),
+        parsed = utils.create(null);
+
+    column.type = parseType(collection.primaryKeyFormat || this.ctx.defaultPrimaryKeyFormat || "integer");
+    column.foreignKey = true;
+
+    parsed[columnName] = utils.copy(column);
+    return parsed;
+};
+
+Schema.prototype.hasOne = function(tableName, attribute, options) {
+    var collection = findCollection(this, tableName),
+        otherCollection = findCollection(this, attribute),
+        columnName = inflect.foreignKey(
+            otherCollection.tableName,
+            options.key || "id",
+            options.camelized != null ? !!options.camelized : true,
+            true
+        ),
+        column = this.getColumn(collection.tableName, columnName),
+        parsed = utils.create(null);
+
+    column.type = parseType(collection.primaryKeyFormat || this.ctx.defaultPrimaryKeyFormat || "integer");
+    column.foreignKey = true;
+
+    parsed[columnName] = utils.copy(column);
+    return parsed;
+};
+
+Schema.prototype.belongsTo = function(tableName, attribute, options) {
+    var collection = findCollection(this, tableName),
+        otherCollection = findCollection(this, attribute),
+        columnName = inflect.foreignKey(
+            inflect.singularize(otherCollection.tableName, options.locale),
+            options.key || "id",
+            options.camelized != null ? !!options.camelized : true,
+            true
+        ),
+        column = this.getColumn(otherCollection.tableName, columnName),
+        parsed = utils.create(null);
+
+    column.type = parseType(collection.primaryKeyFormat || this.ctx.defaultPrimaryKeyFormat || "integer");
+    column.foreignKey = true;
+
+    parsed[columnName] = utils.copy(column);
+    return parsed;
+};
+
+function findCollection(_this, attribute) {
+    var name;
+
+    if (utils.isString(attribute)) {
+        name = attribute;
+    } else if (utils.isString(attribute.model)) {
+        name = attribute.model;
+    } else if (utils.isString(attribute.collection)) {
+        name = attribute.collection;
+    }
+
+    return _this.ctx.getCollection(name);
+}
 
 function parseType(type) {
     if (types.indexOf(type) === -1) throw new Error("parseType(type) type must be one of " + types.join(", "));

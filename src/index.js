@@ -103,6 +103,8 @@ ORM.prototype.addAdaptor = function(name, adaptor) {
     if (!utils.isObject(adaptor)) throw new Error("ORM.addAdaptor(name, adaptor) adaptor must be an object");
     if (adaptors[name]) throw new Error("ORM.addAdaptor(name, adaptor) Adaptor " + name + " already added");
 
+    adaptor.ctx = this;
+
     return (adaptors[name] = adaptor);
 };
 
