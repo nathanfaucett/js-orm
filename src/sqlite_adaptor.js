@@ -145,17 +145,33 @@ SQLiteAdaptor.prototype.removeIndex = function(tableName, columnName, options, c
     return this;
 };
 
+var COMPARISON_TYPES = {
+    gt: ">",
+    gte: ">=",
+    lt: "<",
+    lte: "<=",
+    eq: "=",
+    neq: "!="
+};
+
 function parseWhere(obj) {
     var keys = utils.keys(obj),
         i = keys.length,
         str = [],
-        name, value;
+        name, value, type;
 
     while (i--) {
         name = keys[i];
         value = obj[name];
 
-        if (value) str.push(name + "=" + dataToValue(value));
+        if (utils.isHash(value)) {
+            type = COMPARISON_TYPES[value.type];
+            value = value.value;
+        } else {
+            type = "=";
+        }
+
+        if (value) str.push(name + type + dataToValue(value));
     }
 
     return str.join(" AND ");
@@ -223,10 +239,35 @@ function dataType(attribute) {
     return "VARCHAR(" + (limit || 255) + ")";
 }
 
-function propertyToSQL(attribute) {
-    var out = [];
+function sortProperties(a, b) {
+    if (a === "type") {
+        return -1;
+    }
+    if (b === "type") {
+        return 1;
+    }
+    if (a === "autoIncrement") {
+        return 1;
+    }
+    if (b === "autoIncrement") {
+        return -1;
+    }
 
-    for (var key in attribute) {
+    return 0;
+}
+
+function propertyToSQL(attribute) {
+    var out = [],
+        keys = utils.keys(attribute),
+        i = 0,
+        il = keys.length,
+        key;
+
+    keys.sort(sortProperties);
+
+    for (; i < il; i++) {
+        key = keys[i];
+
         if (key === "autoIncrement") {
             out.push("AUTOINCREMENT");
         } else if (key === "unique") {
@@ -240,7 +281,7 @@ function propertyToSQL(attribute) {
                 out.push("NOT NULL");
             }
         } else if (key === "type") {
-            out.push(dataType(attribute));
+            out.unshift(dataType(attribute));
         }
     }
 

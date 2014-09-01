@@ -1,7 +1,7 @@
 var ORM = require("../../../src");
 
 
-var db = new ORM({
+var db = module.exports = new ORM({
 
     defaultAdaptor: "sqlite",
 
@@ -16,4 +16,5 @@ var db = new ORM({
     }
 });
 
-module.exports = db;
+require("../models/cart");
+require("../models/user");

@@ -18,7 +18,7 @@ function Collection(ctx, options) {
     this.autoPK = options.autoPK != null ? !!options.autoPK : true;
 
     this.name = options.name;
-    this.tableName = utils.isString(options.tableName) ? options.tableName : inflect.tableize(this.name, options.locale);
+    this.tableName = options.tableName;
 
     this.primaryKeyFormat = utils.isString(options.primaryKeyFormat) ? options.primaryKeyFormat : "integer";
     this.hasSchema = options.hasSchema != null ? !!options.hasSchema : true;

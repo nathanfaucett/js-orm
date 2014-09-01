@@ -10,22 +10,11 @@ db.init(function(err) {
         return;
     }
 
-    User.create({
-        firstName: "Bob",
-        lastName: "Fat",
-        email: "bob@gmail.com",
-        encryptedPassword: "AasdS234DFS234DFasdf45asdASDF245G",
-        username: "bobfat"
-    }).then(
-        function(user) {
-            user.delete().then(
-                function(user) {
-
-                },
-                function(err) {
-                    console.log(err);
-                }
-            );
+    console.time("find");
+    User.findById(3).then(
+        function(users) {
+            console.log(users);
+            console.timeEnd("find");
         },
         function(err) {
             console.log(err);

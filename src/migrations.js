@@ -70,27 +70,22 @@ Migrations.prototype.clear = function() {
 
 Migrations.prototype.up = function(callback) {
 
-    return run(this, "up", callback);
+    return Migrations_run(this, "up", callback);
 };
 
 Migrations.prototype.down = function(callback) {
 
-    return run(this, "down", callback);
+    return Migrations_run(this, "down", callback);
 };
 
-Migrations.prototype.run = function(callback) {
+function Migrations_run(_this, type, callback) {
 
-    return run(this, null, callback);
-};
-
-function run(_this, type, callback) {
-
-    function cb(err) {
+    function cb(errs) {
 
         _this.clear();
 
-        if (err) {
-            callback(err);
+        if (errs) {
+            callback(errs);
             return;
         }
 
@@ -124,7 +119,9 @@ function run(_this, type, callback) {
 
             if (collections.indexOf(collection) === -1) collections.push(collection);
 
+            migrate.collection = collection;
             migrate.adaptor = collection.adaptor;
+
             exports[action](migrate);
 
             return true;
@@ -158,11 +155,11 @@ function run(_this, type, callback) {
                 if (utils.isFunction(adaptor[task.name])) {
                     adaptor[task.name].apply(adaptor, task.args);
                 } else {
-                    cb(new Error("task's adaptor with name " + adaptor.name + " has no function " + task.name));
+                    cb([new Error("collection " + task.collection.name + " adaptor with name " + adaptor.name + " has no function " + task.name)]);
                     return false;
                 }
             } else {
-                cb(new Error("task's adaptor is not defined"));
+                cb([new Error("collection " + task.collection.name + " is not defined")]);
                 return false;
             }
 

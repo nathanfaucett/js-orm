@@ -7,6 +7,9 @@
     "url": "https://github.com/nathanfaucett/orm.git"
   },
   "main": "src/index.js",
+  "bin": {
+    "orm": "bin/index.js"
+  },
   "keywords": [
     "orm",
     "orm.js"

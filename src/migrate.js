@@ -6,23 +6,26 @@ var NAME_SPLITER = /[\s, ]+/,
     slice = Array.prototype.slice;
 
 
-function Task(order, name, args, adaptor) {
+function Task(order, name, args, adaptor, collection) {
     this.order = order;
     this.name = name;
     this.args = args;
     this.adaptor = adaptor;
+    this.collection = collection;
 }
 
 
 function Migrate(ctx) {
 
     this.ctx = ctx;
+
     this.adaptor = null;
+    this.collection = null;
 }
 
-function createTask(_this, order, name) {
+function Migrate_createTask(_this, order, name) {
     var args = slice.call(arguments, 3),
-        task = new Task(order, name, args, _this.adaptor);
+        task = new Task(order, name, args, _this.adaptor, _this.collection);
 
     _this.ctx.migrations.tasks.push(task);
     return _this;
@@ -32,28 +35,28 @@ Migrate.prototype.createTable = function(tableName, attributes, options) {
 
     attributes = this.ctx.schema.createTable(tableName, attributes || {}, options);
 
-    return createTask(this, 0, "createTable", tableName, attributes);
+    return Migrate_createTask(this, 0, "createTable", tableName, attributes);
 };
 
 Migrate.prototype.dropTable = function(tableName) {
 
     this.ctx.schema.removeTable(tableName);
 
-    return createTask(this, 1, "dropTable", tableName);
+    return Migrate_createTask(this, 1, "dropTable", tableName);
 };
 
 Migrate.prototype.changeTable = function(tableName, attributes, options) {
 
     attributes = this.ctx.schema.createTable(tableName, attributes || {}, options);
 
-    return createTask(this, 2, "changeTable", tableName, attributes);
+    return Migrate_createTask(this, 2, "changeTable", tableName, attributes);
 };
 
 Migrate.prototype.renameTable = function(oldName, newName) {
 
     this.ctx.schema.renameTable(oldName, newName);
 
-    return createTask(this, 3, "renameTable", oldName, newName);
+    return Migrate_createTask(this, 3, "renameTable", oldName, newName);
 };
 
 Migrate.prototype.addColumn = function(tableName, columnName, type, attributes) {
@@ -65,14 +68,14 @@ Migrate.prototype.addColumn = function(tableName, columnName, type, attributes) 
 
     attributes = this.ctx.schema.createColumn(tableName, columnName, attributes);
 
-    return createTask(this, 4, "addColumn", tableName, columnName, attributes);
+    return Migrate_createTask(this, 4, "addColumn", tableName, columnName, attributes);
 };
 
 Migrate.prototype.renameColumn = function(tableName, columnName, newColumnName) {
 
     this.ctx.schema.renameColumn(tableName, columnName, newColumnName);
 
-    return createTask(this, 5, "renameColumn", tableName, columnName, newColumnName);
+    return Migrate_createTask(this, 5, "renameColumn", tableName, columnName, newColumnName);
 };
 
 Migrate.prototype.changeColumn = function(tableName, columnName, type, attributes) {
@@ -84,7 +87,7 @@ Migrate.prototype.changeColumn = function(tableName, columnName, type, attribute
 
     attributes = this.ctx.schema.createColumn(tableName, columnName, attributes);
 
-    return createTask(this, 6, "changeColumn", tableName, columnName, attributes);
+    return Migrate_createTask(this, 6, "changeColumn", tableName, columnName, attributes);
 };
 
 Migrate.prototype.removeColumn = function(tableName, columnName, type, options) {
@@ -96,7 +99,7 @@ Migrate.prototype.removeColumn = function(tableName, columnName, type, options) 
 
     this.ctx.schema.removeColumn(tableName, columnName);
 
-    return createTask(this, 7, "removeColumn", tableName, columnName, options);
+    return Migrate_createTask(this, 7, "removeColumn", tableName, columnName, options);
 };
 
 Migrate.prototype.addIndex = function(tableName, columnName, attributes, options) {
@@ -107,7 +110,7 @@ Migrate.prototype.addIndex = function(tableName, columnName, attributes, options
 
     attributes = schema.createColumn(tableName, columnName, attributes, options);
 
-    return createTask(this, 8, "addIndex", tableName, columnName, attributes);
+    return Migrate_createTask(this, 8, "addIndex", tableName, columnName, attributes);
 };
 
 Migrate.prototype.removeIndex = function(tableName, columnName, attributes, options) {
@@ -118,7 +121,7 @@ Migrate.prototype.removeIndex = function(tableName, columnName, attributes, opti
 
     attributes = schema.removeColumnAttributes(tableName, columnName, attributes, options);
 
-    return createTask(this, 8, "addIndex", tableName, columnName, attributes);
+    return Migrate_createTask(this, 9, "removeIndex", tableName, columnName, attributes);
 };
 
 

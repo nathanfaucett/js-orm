@@ -35,7 +35,7 @@ var db = require("../db");
 
 var User = db.define("User");
 
-// User.prototype is an object that the Model created after init will inherit
+// User.prototype is an object that the Model, created after init, will inherit
 Object.defineProperty(User.prototype, "fullName", {
     get: function() {
         return this.firstName + " " + this.lastName;
