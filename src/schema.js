@@ -25,7 +25,6 @@ var types = [
     ],
     reservedWords = [
         "null",
-        "default",
         "defaultsTo",
         "primaryKey",
         "foreignKey",

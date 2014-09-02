@@ -222,28 +222,36 @@ Database.prototype.deleteWhere = function(where, callback) {
     var _this = this;
 
     if (utils.isFunction(callback)) {
-        _this.adaptor.delete(_this.tableName, where, function(err, rows) {
+        _this.adaptor.deleteWhere(_this.tableName, where, function(err, rows) {
+            var collection = _this.collection,
+                i;
+
             if (err) {
                 callback(err);
                 return;
             }
 
             rows = _this.toModel(rows);
-            _this.collection.emit("deleteWhere", rows);
+            i = rows.length;
+            while (i--) collection.emit("delete", rows[i]);
             callback(null, rows);
         });
         return undefined;
     }
 
     return new Promise(function(resolve, reject) {
-        _this.adaptor.delete(_this.tableName, where, function(err, rows) {
+        _this.adaptor.deleteWhere(_this.tableName, where, function(err, rows) {
+            var collection = _this.collection,
+                i;
+
             if (err) {
                 reject(err);
                 return;
             }
 
             rows = _this.toModel(rows);
-            _this.collection.emit("deleteWhere", rows);
+            i = rows.length;
+            while (i--) collection.emit("delete", rows[i]);
             resolve(rows);
         });
     });
@@ -254,13 +262,17 @@ Database.prototype.deleteAll = function(callback) {
 
     if (utils.isFunction(callback)) {
         _this.adaptor.deleteAll(_this.tableName, function(err, rows) {
+            var collection = _this.collection,
+                i;
+
             if (err) {
                 callback(err);
                 return;
             }
 
             rows = _this.toModel(rows);
-            _this.collection.emit("deleteAll", rows);
+            i = rows.length;
+            while (i--) collection.emit("delete", rows[i]);
             callback(null, rows);
         });
         return undefined;
@@ -268,13 +280,17 @@ Database.prototype.deleteAll = function(callback) {
 
     return new Promise(function(resolve, reject) {
         _this.adaptor.deleteAll(_this.tableName, function(err, rows) {
+            var collection = _this.collection,
+                i;
+
             if (err) {
                 reject(err);
                 return;
             }
 
             rows = _this.toModel(rows);
-            _this.collection.emit("deleteAll", rows);
+            i = rows.length;
+            while (i--) collection.emit("delete", rows[i]);
             resolve(rows);
         });
     });

@@ -41,7 +41,7 @@ function prettyErrors(errors) {
     return out;
 }
 
-function up(db, options) {
+function runUp(db, options) {
     db.migrations.up(options, function(errors) {
         if (errors) {
             console.log("\nORM Migrations failed with errors:\n" + prettyErrors(errors));
@@ -52,7 +52,7 @@ function up(db, options) {
     });
 }
 
-function down(db, options) {
+function runDown(db, options) {
     db.migrations.down(options, function(errors) {
         if (errors) {
             console.log("ORM Migrations failed with errors:\n" + prettyErrors(errors));
@@ -68,17 +68,31 @@ function run(args) {
         options = {};
 
     db.init(function(err) {
+        var up = !!args["--up"],
+            down = !!args["--down"],
+            seed = args["--seed"];
+
         if (err) {
             console.log("\nORM Migrations failed with errors:\n" + prettyError(err));
             return;
         }
 
-        if (args["--up"]) {
-            up(db, options);
-        } else if (args["--down"]) {
-            down(db, options);
+        if (seed && typeof(seed) === "string") {
+            require(filePath.join(process.cwd(), seed))(function(err) {
+                if (err) {
+                    console.log("ORM Seed failed with error:\n" + prettyError(err));
+                    return;
+                }
+
+                console.log("\nORM Seed successfully seeded\n");
+            });
+            return;
+        }
+
+        if (up || !down) {
+            runUp(db, options);
         } else {
-            console.log("\nORM Migrations pass --up or --down to run migrations\n");
+            runDown(db, options);
         }
     });
 }

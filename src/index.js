@@ -6,6 +6,7 @@ var utils = require("utils"),
     Migrations = require("./migrations"),
     Collection = require("./collection"),
 
+    MemoryAdaptor = require("./memory_adaptor"),
     SQLiteAdaptor = require("./sqlite_adaptor");
 
 
@@ -13,6 +14,8 @@ function ORM(options) {
     options || (options = {});
 
     EventEmitter.call(this);
+
+    this._initted = false;
 
     this.defaultAdaptor = options.defaultAdaptor;
     this.defaultPrimaryKeyFormat = options.defaultPrimaryKeyFormat || "integer";
@@ -30,9 +33,16 @@ function ORM(options) {
 EventEmitter.extend(ORM);
 
 ORM.SQLiteAdaptor = SQLiteAdaptor;
+ORM.MemoryAdaptor = MemoryAdaptor;
 
 ORM.prototype.init = function(callback) {
     var _this = this;
+
+    if (this._initted === true) {
+        process.nextTick(callback);
+        return;
+    }
+    this._initted = true;
 
     this.schema.init(function(err) {
         if (err) {

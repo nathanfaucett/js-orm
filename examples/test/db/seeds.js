@@ -1,7 +1,8 @@
-module.exports = function seed(callback) {
+module.exports = function seeds(callback) {
     var User = require("../models/user"),
-        Cart = require("../models/cart"),
-        length = 6;
+        Cart = require("../models/cart");
+
+    var length = 6;
 
     function done(err) {
         if (err || --length <= 0) {

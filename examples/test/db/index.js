@@ -3,10 +3,10 @@ var ORM = require("../../../src");
 
 var db = module.exports = new ORM({
 
-    defaultAdaptor: "sqlite",
+    defaultAdaptor: "memory",
 
     adaptors: {
-        "sqlite": new ORM.SQLiteAdaptor()
+        "memory": new ORM.MemoryAdaptor()
     },
     schema: {
         file: "db/schema.json"

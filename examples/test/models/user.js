@@ -17,9 +17,5 @@ Object.defineProperty(User.prototype, "fullName", {
     }
 });
 
-User.on("save", function(row) {
-
-});
-
 
 module.exports = User;

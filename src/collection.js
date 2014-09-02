@@ -67,7 +67,7 @@ Collection.prototype.create = function(attributes, callback) {
 };
 
 Collection.prototype.save = function(model, callback) {
-    var errors = this.validate(model);
+    var errors = this.validate(model, "save");
 
     if (errors) {
         if (utils.isFunction(callback)) {
@@ -82,7 +82,7 @@ Collection.prototype.save = function(model, callback) {
 };
 
 Collection.prototype.update = function(model, callback) {
-    var errors = this.validate(model);
+    var errors = this.validate(model, "update");
 
     if (errors) {
         if (utils.isFunction(callback)) {
@@ -137,18 +137,49 @@ Collection.prototype.filter = function(values) {
     var has = utils.has,
 
         schema = this.schema,
-        key;
+        keys, i, il, key;
 
     if (!this.hasSchema) return values;
 
-    for (key in values) {
+    keys = utils.keys(values)
+
+    for (i = 0, il = keys.length; i < il; i++) {
+        key = keys[i];
         if (!has(schema, key)) delete values[key];
     }
 
     return values;
 };
 
-Collection.prototype.validate = function(values) {
+Collection.prototype.defaults = function(values, action) {
+    var has = utils.has,
+
+        schema = this.schema,
+        keys, i, il, key, value, defaultsTo;
+
+    if (!this.hasSchema) return values;
+
+    keys = utils.keys(schema)
+
+    for (i = 0, il = keys.length; i < il; i++) {
+        key = keys[i];
+        value = values[key];
+        defaultsTo = schema[key].defaultsTo;
+
+        if (value || !defaultsTo) continue;
+
+        if (defaultsTo === "NOW") {
+            if (!value || (action === "save" && (key === "createdAt" || key === "created_at"))) values[key] = Date.now();
+            if (!value || (action === "update" && (key === "updatedAt" || key === "updated_at"))) values[key] = Date.now();
+        } else {
+            values[key] = defaultsTo;
+        }
+    }
+
+    return values;
+};
+
+Collection.prototype.validate = function(values, action) {
     var has = utils.has,
         isFunction = utils.isFunction,
         match = validator.match,
@@ -159,6 +190,7 @@ Collection.prototype.validate = function(values) {
         validation, value, args, attribute, defaultsTo, error, name, rule;
 
     this.filter(values);
+    this.defaults(values, action);
 
     for (name in validations) {
         attribute = schema[name];

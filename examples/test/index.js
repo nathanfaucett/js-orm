@@ -10,25 +10,38 @@ db.init(function(err) {
         return;
     }
 
-    console.time("find");
-    User.all().then(
-        function(users) {
-            console.log(users);
-            console.timeEnd("find");
-        },
-        function(err) {
-            console.log(err);
+    require("./db/seed")(function(err) {
+        if (err) {
+            throw err;
+            return;
         }
-    );
 
-    console.time("find");
-    Cart.all().then(
-        function(carts) {
-            console.log(carts);
-            console.timeEnd("find");
-        },
-        function(err) {
-            console.log(err);
-        }
-    );
+        console.time("User all");
+        User.all().then(
+            function(users) {
+                console.timeEnd("User all");
+
+                users.forEach(function(user) {
+                    console.log(user, user.fullName);
+                });
+
+                console.time("Cart all");
+                Cart.all().then(
+                    function(carts) {
+                        console.timeEnd("Cart all");
+
+                        carts.forEach(function(cart) {
+                            console.log(cart, cart.html);
+                        });
+                    },
+                    function(err) {
+                        console.log(err);
+                    }
+                );
+            },
+            function(err) {
+                console.log(err);
+            }
+        );
+    });
 });

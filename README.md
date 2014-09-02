@@ -48,7 +48,7 @@ Object.defineProperty(User.prototype, "fullName", {
     }
 });
 
-// other events include update, delete, deleteWhere and deleteAll
+// events - save, update, and delete
 User.on("save", function(row) {
 
 });

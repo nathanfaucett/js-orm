@@ -5,11 +5,11 @@
       "foreignKey": true
     },
     "title": {
-      "default": "",
+      "defaultsTo": "",
       "type": "string"
     },
     "content": {
-      "default": "",
+      "defaultsTo": "",
       "type": "string"
     },
     "id": {
@@ -34,17 +34,17 @@
       "type": "string"
     },
     "email": {
-      "default": "",
+      "defaultsTo": "",
       "null": false,
       "type": "string"
     },
     "encryptedPassword": {
-      "default": "",
+      "defaultsTo": "",
       "null": false,
       "type": "string"
     },
     "username": {
-      "default": "",
+      "defaultsTo": "",
       "null": false,
       "type": "string"
     },

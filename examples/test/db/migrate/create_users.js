@@ -6,17 +6,17 @@ exports.up = function(migrate) {
         email: {
             type: "string",
             null: false,
-            default: ""
+            defaultsTo: ""
         },
         encryptedPassword: {
             type: "string",
             null: false,
-            default: ""
+            defaultsTo: ""
         },
         username: {
             type: "string",
             null: false,
-            default: ""
+            defaultsTo: ""
         },
 
         timestamps: true

@@ -3,11 +3,11 @@ exports.up = function(migrate) {
     migrate.createTable("carts", {
         title: {
             type: "string",
-            default: ""
+            defaultsTo: ""
         },
         content: {
             type: "string",
-            default: ""
+            defaultsTo: ""
         },
 
         belongsTo: "user",

@@ -260,8 +260,6 @@ function propertyToSQL(attribute) {
             out.push("UNIQUE");
         } else if (key === "primaryKey") {
             out.push("PRIMARY KEY");
-        } else if (key === "defaultsTo") {
-            out.push("DEFAULTS " + attribute[key]);
         } else if (key === "null") {
             if (attribute[key] === false) {
                 out.push("NOT NULL");
