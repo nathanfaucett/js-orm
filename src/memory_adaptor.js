@@ -1,296 +1,263 @@
 var utils = require("utils"),
-    Adaptor = require("./adaptor");
-
-
-function MemoryAdaptor(options) {
-    options || (options = {});
-    options.name = "memory";
-
-    Adaptor.call(this, options);
-
-    this.counters = {};
-    this.tables = {};
-}
-utils.inherits(MemoryAdaptor, Adaptor);
-
-MemoryAdaptor.prototype.init = function(callback) {
-
-    callback(null);
-    return this;
-};
-
-MemoryAdaptor.prototype.table = function(name) {
-    var tables = this.tables;
-
-    return tables[name] || (tables[name] = []);
-};
-
-MemoryAdaptor.prototype.counter = function(name) {
-    var counters = this.counters,
-        counter = ++counters[name] || (counters[name] = 1);
-
-    return counter;
-};
-
-MemoryAdaptor.prototype.save = function(name, attrs, callback) {
-    var _this = this,
-        schema = this.ctx.schema.getTable(name);
-
-    if (schema.id) attrs.id = _this.counter(name);
-
-    process.nextTick(function() {
-
-        _this.table(name).push(attrs);
-        callback(null, utils.copy(attrs));
-    });
-    return this;
-};
-
-MemoryAdaptor.prototype.update = function(name, attrs, callback) {
-    var _this = this;
-
-    process.nextTick(function() {
-
-        _this.table(name).push(attrs);
-        callback(null, utils.copy(attrs));
-    });
-    return this;
-};
-
-MemoryAdaptor.prototype.all = function(name, callback) {
-    var _this = this;
-
-    process.nextTick(function() {
-
-        callback(null, utils.copy(_this.table(name)));
-    });
-    return this;
-};
-
-MemoryAdaptor.prototype.find = function(name, where, callback) {
-    var _this = this;
-
-    process.nextTick(function() {
-
-        callback(null, utils.copy(findWhere(_this.table(name), where)));
-    });
-    return this;
-};
-
-MemoryAdaptor.prototype.findOne = function(name, where, callback) {
-    var _this = this;
-
-    process.nextTick(function() {
-
-        callback(null, utils.copy(findOneWhere(_this.table(name), where)));
-    });
-    return this;
-};
-
-MemoryAdaptor.prototype.findById = function(name, id, callback) {
-    var _this = this;
-
-    process.nextTick(function() {
-
-        callback(null, utils.copy(findOneWhere(_this.table(name), {
-            id: id
-        })));
-    });
-    return this;
-};
-
-MemoryAdaptor.prototype.delete = function(name, id, callback) {
-    var _this = this;
-
-    process.nextTick(function() {
-
-        callback(null, utils.copy(removeOneWhere(_this.table(name), {
-            id: id
-        })));
-    });
-    return this;
-};
-
-MemoryAdaptor.prototype.deleteWhere = function(name, where, callback) {
-    var _this = this;
-
-    process.nextTick(function() {
-
-        callback(null, utils.copy(removeWhere(_this.table(name), where)));
-    });
-    return this;
-};
-
-MemoryAdaptor.prototype.deleteAll = function(name, callback) {
-    var _this = this,
-        table = _this.table(name);
-
-    process.nextTick(function() {
-
-        callback(null, utils.copy(table));
-        table.length = 0;
-    });
-    return this;
-};
-
-MemoryAdaptor.prototype.createTable = function(name, options, callback) {
-
-    process.nextTick(callback);
-    return this;
-};
-
-MemoryAdaptor.prototype.dropTable = function(name, callback) {
-
-    process.nextTick(callback);
-    return this;
-};
-
-MemoryAdaptor.prototype.renameTable = function(oldName, newName, callback) {
-
-    process.nextTick(callback);
-    return this;
-};
-
-MemoryAdaptor.prototype.addColumn = function(tableName, columnName, attribute, callback) {
-
-    process.nextTick(callback);
-    return this;
-};
-
-MemoryAdaptor.prototype.renameColumn = function(tableName, columnName, newColumnName, callback) {
-
-    process.nextTick(callback);
-    return this;
-};
-
-MemoryAdaptor.prototype.removeColumn = function(tableName, columnName, options, callback) {
-
-    process.nextTick(callback);
-    return this;
-};
-
-MemoryAdaptor.prototype.addIndex = function(tableName, columnName, options, callback) {
-
-    process.nextTick(callback);
-    return this;
-};
-
-MemoryAdaptor.prototype.removeIndex = function(tableName, columnName, options, callback) {
-
-    process.nextTick(callback);
-    return this;
-};
-
+    each = require("each");
 
 function findWhere(array, where) {
-    var i = 0,
-        il = array.length,
-        out = [],
+    var i = array.length,
+        keys = utils.keys(where),
+        length = keys.length,
+        results = [],
         k = 0,
-        keys, length, j, key, row, pass;
+        item, j, key;
 
-    if (i === 0) return out;
-
-    keys = utils.keys(where);
-    length = keys.length;
-
-    while (++i < il) {
-        row = array[i];
-        pass = true;
+    while (i--) {
+        item = array[i];
 
         j = length;
         while (j--) {
             key = keys[j];
-            if (where[key] !== row[key]) pass = false;
+            if (item[key] === where[key]) {
+                results[k++] = item;
+            }
         }
-        if (pass) out[k++] = row;
     }
 
-    return out;
+    return results;
 }
 
 function findOneWhere(array, where) {
-    var i = 0,
-        il = array.length,
-        k = 0,
-        keys, length, j, key, row, pass;
+    var i = array.length,
+        keys = utils.keys(where),
+        length = keys.length,
+        item, j, key;
 
-    if (i === 0) return out;
-
-    keys = utils.keys(where);
-    length = keys.length;
-
-    while (++i < il) {
-        row = array[i];
-        pass = true;
+    while (i--) {
+        item = array[i];
 
         j = length;
         while (j--) {
             key = keys[j];
-            if (where[key] !== row[key]) pass = false;
+            if (item[key] === where[key]) {
+                return item;
+            }
         }
-        if (pass) return row;
     }
 
     return null;
 }
 
-function removeWhere(array, where) {
-    var i = array.length,
-        removed = [],
-        k = 0,
-        keys, length, j, key, row, pass;
+function MemoryTable(schema) {
+    var counters = {};
 
-    if (i === 0) return removed;
+    this.schema = schema;
 
-    keys = utils.keys(where);
-    length = keys.length;
+    this.counters = counters;
+    this.rows = [];
 
-    while (i--) {
-        row = array[i];
-        pass = true;
-
-        j = length;
-        while (j--) {
-            key = keys[j];
-            if (where[key] !== row[key]) pass = false;
-        }
-        if (pass) {
-            removed[k++] = row;
-            array.splice(i, 1);
-        }
-    }
-
-    return removed;
+    each(schema.columns, function(column, columnName) {
+        each(column, function(value, key) {
+            if (key === "autoIncrement") {
+                counters[columnName] = 1;
+            }
+        });
+    });
 }
 
-function removeOneWhere(array, where) {
-    var i = array.length,
-        k = 0,
-        keys, length, j, key, row, pass;
+MemoryTable.prototype.save = function(where, callback) {
+    var row = {};
 
-    if (i === 0) return null;
+    each(this.counters, function(counter, key, counters) {
+        where[key] = counters[key]++;
+    });
 
-    keys = utils.keys(where);
-    length = keys.length;
+    each(this.schema.columns, function(column, key) {
+        var value = where[key];
 
-    while (i--) {
-        row = array[i];
-        pass = true;
-
-        j = length;
-        while (j--) {
-            key = keys[j];
-            if (where[key] !== row[key]) pass = false;
+        if (value === undefined) {
+            row[key] = null;
+        } else {
+            row[key] = value;
         }
-        if (pass) {
-            array.splice(i, 1);
-            return row;
-        }
+    });
+
+    this.rows.push(row);
+
+    callback(null, row);
+};
+
+MemoryTable.prototype.update = function(model, callback) {
+    var row = findOneWhere(this.rows, {
+        id: model.id
+    });
+
+    if (!row) {
+        callback(new Error("MemoryAdaptor update() no row found where id=" + model.id));
+        return;
     }
 
-    return null;
+    each(this.schema.columns, function(column, key) {
+        var value = where[key];
+
+        if (value !== undefined) {
+            row[key] = value;
+        }
+    });
+
+    callback(null, utils.copy(row));
+};
+
+MemoryTable.prototype.all = function(callback) {
+
+    callback(null, each.map(this.rows, utils.copy));
+};
+
+MemoryTable.prototype.find = function(where, callback) {
+    var rows = findWhere(this.rows, where);
+
+    callback(null, each.map(rows, utils.copy));
+};
+
+MemoryTable.prototype.findOne = function(where, callback) {
+    var row = findOneWhere(this.rows, where);
+
+    callback(null, utils.copy(row));
+};
+
+MemoryTable.prototype.findById = function(id, callback) {
+    var row = findOneWhere(this.rows, {
+        id: id
+    });
+
+    callback(null, utils.copy(row));
+};
+
+MemoryTable.prototype["delete"] = function(id, callback) {
+    var rows = this.rows,
+        row = findOneWhere(rows, {
+            id: id
+        });
+
+    if (!row) {
+        callback(new Error("MemoryAdaptor delete() no row found where id=" + id));
+        return;
+    }
+
+    rows.splice(utils.indexOf(rows, row), 1);
+    callback(null, utils.copy(row));
+};
+
+MemoryTable.prototype.deleteWhere = function(where, callback) {
+    var rows = this.rows,
+        toDelete = findWhere(rows, where),
+        i = toDelete.length;
+
+    while (i--) {
+        rows.splice(utils.indexOf(rows, toDelete[i]), 1);
+    }
+
+    callback(null, each(toDelete, utils.copy));
+};
+
+MemoryTable.prototype.deleteAll = function(callback) {
+    var rows = each.map(this.rows, utils.copy);
+
+    this.rows.length = 0;
+    callback(null, rows);
+};
+
+
+function MemoryAdaptor() {
+
+    this.collection = null;
+    this.tables = {};
 }
+
+MemoryAdaptor.prototype.init = function(callback) {
+    var _this = this,
+        tables = this.tables,
+        schema = this.collection.schema;
+
+    process.nextTick(function() {
+
+        each(schema.tables, function(tableSchema, tableName) {
+
+            tables[tableName] = new MemoryTable(tableSchema);
+        });
+        callback();
+    });
+    return this;
+};
+
+MemoryAdaptor.prototype.save = function(tableName, where, callback) {
+    var _this = this;
+
+    process.nextTick(function() {
+        _this.tables[tableName].save(where, callback);
+    });
+};
+
+MemoryAdaptor.prototype.update = function(tableName, model, callback) {
+    var _this = this;
+
+    process.nextTick(function() {
+        _this.tables[tableName].update(model, callback);
+    });
+};
+
+MemoryAdaptor.prototype.all = function(tableName, callback) {
+    var _this = this;
+
+    process.nextTick(function() {
+        _this.tables[tableName].all(callback);
+    });
+};
+
+MemoryAdaptor.prototype.find = function(tableName, where, callback) {
+    var _this = this;
+
+    process.nextTick(function() {
+        _this.tables[tableName].find(where, callback);
+    });
+};
+
+MemoryAdaptor.prototype.findOne = function(tableName, where, callback) {
+    var _this = this;
+
+    process.nextTick(function() {
+        _this.tables[tableName].findOne(where, callback);
+    });
+};
+
+MemoryAdaptor.prototype.findById = function(tableName, id, callback) {
+    var _this = this;
+
+    process.nextTick(function() {
+        _this.tables[tableName].findById(id, callback);
+    });
+};
+
+MemoryAdaptor.prototype["delete"] = function(tableName, id, callback) {
+    var _this = this;
+
+    process.nextTick(function() {
+        _this.tables[tableName]["delete"](id, callback);
+    });
+};
+
+MemoryAdaptor.prototype.deleteWhere = function(tableName, where, callback) {
+    var _this = this;
+
+    process.nextTick(function() {
+        _this.tables[tableName].deleteWhere(where, callback);
+    });
+};
+
+MemoryAdaptor.prototype.deleteAll = function(tableName, callback) {
+    var _this = this;
+
+    process.nextTick(function() {
+        _this.tables[tableName].deleteAll(callback);
+    });
+};
 
 
 module.exports = MemoryAdaptor;

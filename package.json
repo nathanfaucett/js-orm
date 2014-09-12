@@ -23,12 +23,10 @@
   },
   "dependencies": {
     "event_emitter": "nathanfaucett/event_emitter",
-    "file_path": "nathanfaucett/file_path",
-    "file_utils": "nathanfaucett/file_utils",
     "inflect": "nathanfaucett/inflect",
     "promise": "nathanfaucett/promise",
-    "sqlite3": "^2.2.4",
     "utils": "nathanfaucett/utils",
-    "validator": "nathanfaucett/validator"
+    "type": "nathanfaucett/type",
+    "each": "nathanfaucett/each"
   }
 }
