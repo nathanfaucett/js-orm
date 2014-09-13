@@ -1,0 +1,11 @@
+{
+  "name": "server",
+  "version": "0.0.1",
+  "description": "server test",
+  "dependencies": {
+    "body_parser": "git://github.com/nathanfaucett/body_parser",
+    "context": "git://github.com/nathanfaucett/context",
+    "cors": "git://github.com/nathanfaucett/cors",
+    "layers": "git://github.com/nathanfaucett/layers"
+  }
+}

@@ -5,60 +5,65 @@ object relational mapping for node.js
 
 ###Usage
 
-create a new ORM object
+create a new orm.Collection
 
 ```javascript
-var ORM = require("orm");
+var orm = require("orm");
 
-var db = new ORM({
+var collection = new orm.Collection({
 
-    defaultAdaptor: "sqlite",
+    schema: require("./path/to/schema"),
 
     adaptors: {
-        "sqlite": new ORM.SQLiteAdaptor()
-    },
-    schema: {
-        file: "db/schema.json"
-    },
-    migrations: {
-        folder: "db/migrate"
+        http: new orm.HttpAdaptor({
+            url: "127.0.0.1:3000",
+            paths: {
+              users: {
+                url: "www.users.com"
+              }
+            }
+        })
     }
 });
 
-module.exports = db;
+collection.model(
+  require("./path/to/user_model")
+  require("./path/to/other_model")
+);
+
+module.exports = collection;
 ```
 
-create a collection
+create a Model
 
 ```javascript
-var db = require("../db");
+var orm = require("orm");
 
-var User = db.define("User");
+var User = new orm.Model({
+    name: "User",
+    adaptor: "memory"
+});
 
-// User.prototype is an object that the Model, created after init, will inherit
+// User.prototype is an object that the User instance classes, created after init, will inherit from
 Object.defineProperty(User.prototype, "fullName", {
     get: function() {
         return this.firstName + " " + this.lastName;
     },
     set: function(value) {
-        value = (value + "").split(SPLITER);
+        var split = (value || "").split(/[\s ]+/);
 
-        this.firstName = value[0] || this.firstName;
-        this.lastName = value[1] || this.lastName;
+        this.firstName = split[0] || this.firstName;
+        this.lastName = split[1] || this.lastName;
     }
 });
-
-// events - save, update, and delete
-User.on("save", function(row) {
-
-});
-
 
 module.exports = User;
 ```
 
 ```javascript
-var db = require("../db");
+var collection = require("../collection");
+
+collection.models.User.adaptor = "http";
 
 db.init(function(err) {
     if (err) {
@@ -68,17 +73,12 @@ db.init(function(err) {
     
     // start application
 });
-
-
-// some other place
-var User = require("./models/user");
-
-User.findById(10).then(
-  function(user) {
-    console.log(user);
-  },
-  function(err) {
-    console.log(err);
-  }
-);
 ```
+
+notes on the example
+=====
+
+in server folder install npm deps and then listen on localhost 3000 by exec node index.js
+
+in the they will be some errors in the console its just require.js trying to find the node
+modules
