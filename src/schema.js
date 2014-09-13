@@ -131,7 +131,7 @@ Schema.defineFunction("timestamps", {
 );
 
 Schema.defineFunction("hasMany", null, function hasMany(schema, table, column, options) {
-    var modelName, modelTable, columnName, modelColumn;
+    var modelName, modelTable, columnName, modelColumn, model;
 
     column = type.isString(column) ? {
         collection: column
@@ -148,6 +148,10 @@ Schema.defineFunction("hasMany", null, function hasMany(schema, table, column, o
         true
     );
 
+    model = schema.collection.models[inflect.classify(modelName, options.locale)];
+    model.defineFindBy(columnName);
+    model.defineFindOneBy(columnName);
+
     modelTable.addFunctionColumn(columnName, {
         type: modelColumn.type,
         foreignKey: true
@@ -155,7 +159,7 @@ Schema.defineFunction("hasMany", null, function hasMany(schema, table, column, o
 });
 
 Schema.defineFunction("hasOne", null, function hasMany(schema, table, column, options) {
-    var modelName, modelTable, columnName, modelColumn;
+    var modelName, modelTable, columnName, modelColumn, model;
 
     column = type.isString(column) ? {
         model: column
@@ -172,6 +176,10 @@ Schema.defineFunction("hasOne", null, function hasMany(schema, table, column, op
         true
     );
 
+    model = schema.collection.models[inflect.classify(modelName, options.locale)];
+    model.defineFindBy(columnName);
+    model.defineFindOneBy(columnName);
+
     modelTable.addFunctionColumn(columnName, {
         type: modelColumn.type,
         foreignKey: true
@@ -179,7 +187,7 @@ Schema.defineFunction("hasOne", null, function hasMany(schema, table, column, op
 });
 
 Schema.defineFunction("belongsTo", null, function belongsTo(schema, table, column, options) {
-    var modelName, modelTable, columnName, modelColumn;
+    var modelName, modelTable, columnName, modelColumn, model;
 
     column = type.isString(column) ? {
         model: column
@@ -195,6 +203,10 @@ Schema.defineFunction("belongsTo", null, function belongsTo(schema, table, colum
         options.camelcase === true || options.underscore !== false,
         true
     );
+
+    model = schema.collection.models[inflect.classify(table.tableName, options.locale)];
+    model.defineFindBy(columnName);
+    model.defineFindOneBy(columnName);
 
     table.addFunctionColumn(columnName, {
         type: modelColumn.type,

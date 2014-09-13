@@ -6,7 +6,6 @@ var Cart = new orm.Model({
     adaptor: "memory"
 });
 
-
 Cart.prototype.toJSON = function() {
     var json = {};
 

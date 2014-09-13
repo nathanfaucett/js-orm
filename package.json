@@ -22,11 +22,12 @@
     "grunt-jsbeautifier": ""
   },
   "dependencies": {
+    "each": "nathanfaucett/each",
     "event_emitter": "nathanfaucett/event_emitter",
     "inflect": "nathanfaucett/inflect",
     "promise": "nathanfaucett/promise",
-    "utils": "nathanfaucett/utils",
+    "request": "git://github.com/nathanfaucett/request",
     "type": "nathanfaucett/type",
-    "each": "nathanfaucett/each"
+    "utils": "nathanfaucett/utils"
   }
 }

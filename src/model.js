@@ -77,7 +77,7 @@ Model.prototype.create = function(attributes, callback) {
 Model.prototype.save = function(model, callback) {
     var _this = this;
 
-    model = this.filter(model);
+    model = this.schema.filter(model);
 
     this.emit("beforeSave", model);
 
@@ -90,7 +90,7 @@ Model.prototype.save = function(model, callback) {
 
             row = _this.new(row);
             _this.emit("save", row);
-            callback(null, row);
+            callback(undefined, row);
         });
         return null;
     }
@@ -112,7 +112,7 @@ Model.prototype.save = function(model, callback) {
 Model.prototype.update = function(model, callback) {
     var _this = this;
 
-    model = this.filter(model);
+    model = this.schema.filter(model);
 
     this.emit("beforeUpdate", model);
 
@@ -125,7 +125,7 @@ Model.prototype.update = function(model, callback) {
 
             row = _this.new(row);
             _this.emit("update", row);
-            callback(null, row);
+            callback(undefined, row);
         });
         return null;
     }
@@ -154,7 +154,7 @@ Model.prototype.all = function(callback) {
                 return;
             }
 
-            callback(null, Model_toModels(_this, rows));
+            callback(undefined, Model_toModels(_this, rows));
         });
         return null;
     }
@@ -171,40 +171,58 @@ Model.prototype.all = function(callback) {
     });
 };
 
-Model.prototype.find = function(where, callback) {
+Model.prototype.find = function(query, callback) {
     var _this = this;
 
+    if (type.isFunction(query)) {
+        callback = query;
+        query = {};
+    }
+
     if (type.isFunction(callback)) {
-        this.adaptor.find(this.tableName, where, function(err, rows) {
+        if (query.where === undefined || query.where === null) {
+            query.where = {};
+        }
+
+        this.adaptor.find(this.tableName, query, function(err, rows) {
             if (err) {
                 callback(err);
                 return;
             }
 
-            callback(null, Model_toModels(_this, rows));
+            callback(undefined, Model_toModels(_this, rows));
         });
         return null;
     }
 
-    return new Query(this, this.tableName, "find", where);
+    return new Query(this, "find", query);
 };
 
-Model.prototype.findOne = function(where, callback) {
+Model.prototype.findOne = function(query, callback) {
     var _this = this;
 
+    if (type.isFunction(query)) {
+        callback = query;
+        query = {};
+    }
+
     if (type.isFunction(callback)) {
-        this.adaptor.findOne(this.tableName, where, function(err, row) {
+        if (query.where === undefined || query.where === null) {
+            query.where = {};
+        }
+
+        this.adaptor.findOne(this.tableName, query, function(err, row) {
             if (err) {
                 callback(err);
                 return;
             }
 
-            callback(null, _this.new(row));
+            callback(undefined, _this.new(row));
         });
         return null;
     }
 
-    return new Query(this, this.tableName, "findOne", where);
+    return new Query(this, "findOne", query);
 };
 
 Model.prototype.findById = function(id, callback) {
@@ -217,7 +235,7 @@ Model.prototype.findById = function(id, callback) {
                 return;
             }
 
-            callback(null, _this.new(row));
+            callback(undefined, _this.new(row));
         });
         return null;
     }
@@ -248,7 +266,7 @@ Model.prototype["delete"] = function(model, callback) {
 
             row = _this.new(row);
             _this.emit("delete", row);
-            callback(null, row);
+            callback(undefined, row);
         });
         return null;
     }
@@ -267,13 +285,22 @@ Model.prototype["delete"] = function(model, callback) {
     });
 };
 
-Model.prototype.deleteWhere = function(where, callback) {
+Model.prototype.deleteWhere = function(query, callback) {
     var _this = this;
 
-    if (type.isFunction(callback)) {
-        this.emit("beforeDeleteWhere", where);
+    if (type.isFunction(query)) {
+        callback = query;
+        query = {};
+    }
 
-        this.adaptor.deleteWhere(this.tableName, where, function(err, rows) {
+    if (type.isFunction(callback)) {
+        this.emit("beforeDeleteWhere");
+
+        if (query.where === undefined || query.where === null) {
+            query.where = {};
+        }
+
+        this.adaptor.deleteWhere(this.tableName, query, function(err, rows) {
             var i;
 
             if (err) {
@@ -284,12 +311,12 @@ Model.prototype.deleteWhere = function(where, callback) {
             rows = Model_toModels(_this, rows);
             i = rows.length;
             while (i--) _this.emit("delete", rows[i]);
-            callback(null, rows);
+            callback(undefined, rows);
         });
         return null;
     }
 
-    return new Query(this, this.tableName, "deleteWhere", where);
+    return new Query(this, "deleteWhere", query);
 };
 
 Model.prototype.deleteAll = function(callback) {
@@ -305,7 +332,7 @@ Model.prototype.deleteAll = function(callback) {
             }
 
             _this.emit("deleteAll", rows);
-            callback(null, Model_toModels(_this, rows));
+            callback(undefined, Model_toModels(_this, rows));
         });
         return null;
     }
@@ -323,14 +350,77 @@ Model.prototype.deleteAll = function(callback) {
     });
 };
 
-Model.prototype.filter = function(values) {
-
-    return this.schema.filter(values);
-};
-
 Model.prototype.validate = function(values, action) {
 
     return null;
+};
+
+Model.prototype.defineFindBy = function(key) {
+    this[inflect.camelize("find_by_" + key, true)] = function(value, callback) {
+        var _this = this,
+            query = {
+                where: {}
+            };
+
+        query.where[key] = value;
+
+        if (type.isFunction(callback)) {
+            this.adaptor.find(this.tableName, query, function(err, rows) {
+                if (err) {
+                    callback(err);
+                    return;
+                }
+
+                callback(undefined, Model_toModels(_this, rows));
+            });
+            return null;
+        }
+
+        return new Promise(function(resolve, reject) {
+            _this.adaptor.find(_this.tableName, query, function(err, rows) {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+
+                resolve(Model_toModels(_this, rows));
+            });
+        });
+    };
+};
+
+Model.prototype.defineFindOneBy = function(key) {
+    this[inflect.camelize("find_one_by_" + key, true)] = function(value, callback) {
+        var _this = this,
+            query = {
+                where: {}
+            };
+
+        query.where[key] = value;
+
+        if (type.isFunction(callback)) {
+            this.adaptor.findOne(this.tableName, query, function(err, row) {
+                if (err) {
+                    callback(err);
+                    return;
+                }
+
+                callback(undefined, _this.new(row));
+            });
+            return null;
+        }
+
+        return new Promise(function(resolve, reject) {
+            _this.adaptor.findOne(_this.tableName, query, function(err, row) {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+
+                resolve(_this.new(row));
+            });
+        });
+    };
 };
 
 Model.prototype.generateClass = function() {
@@ -339,9 +429,9 @@ Model.prototype.generateClass = function() {
     try {
         eval([
             "function " + this.className + "() {",
-            generateClassAttributes(this),
+            Model_generateClassAttributes(this),
             "}",
-            generateClassPrototype(this),
+            Model_generateClassPrototype(this),
             "this.Class = " + this.className + ";"
         ].join("\n"));
     } catch (e) {
@@ -356,19 +446,19 @@ function Model_toModels(_this, array) {
     return array;
 }
 
-function generateClassAttributes(collection) {
+function Model_generateClassAttributes(_this) {
     var out = [];
 
-    each(collection.schema.columns, function(_, key) {
+    each(_this.schema.columns, function(_, key) {
         out.push("\tthis." + key + " = null;");
     });
 
     return out.join("\n");
 }
 
-function generateClassPrototype(collection) {
+function Model_generateClassPrototype(_this) {
     var out = [],
-        className = collection.className;
+        className = _this.className;
 
     out.push(
         className + ".prototype = collection.prototype;",

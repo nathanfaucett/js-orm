@@ -1,22 +1,15 @@
-var utils = require("utils");
+var Promise = require("promise"),
+    utils = require("utils");
 
 
-function Query(model, table, action, where) {
-    var conditions = utils.extend({}, where),
-        params = {};
+function Query(model, action, conditions) {
 
     this._model = model;
-    this._table = table;
     this._action = action;
 
     this._currentKey = false;
-    this._conditions = conditions;
-    this._params = params;
-
-    this._query = {
-        conditions: conditions,
-        params: params
-    };
+    this._conditions = utils.extend({}, conditions);
+    this._params = {};
 }
 
 Query.prototype.where = function(key, value) {
@@ -60,7 +53,7 @@ Query.prototype.range = function(key, from, to) {
     return this;
 };
 
-["gt", "gte", "lt", "lte", "in", "inq", "ne", "neq", "nin", "regex", "like", "nlike", "between"].forEach(function(method) {
+["gt", "gte", "lt", "lte", "in", "inq", "ne", "neq", "nin"].forEach(function(method) {
     Query.prototype[method] = function(key, value) {
         var conditions = this._conditions,
             currentKey = this._currentKey;
@@ -148,13 +141,31 @@ Query.prototype.desc = function(value) {
 };
 
 Query.prototype.exec = function(callback) {
+    var query = utils.extend({
+        where: utils.extend({}, this._conditions)
+    }, this._params);
 
+    this._model[this._action](query, callback);
 };
 
 Query.prototype.run = Query.prototype.exec;
 
-Query.prototype.then = function(success, failure) {
+Query.prototype.then = function(onFulfill, onReject) {
+    var defer = Promise.defer(),
+        query = utils.extend({
+            where: utils.extend({}, this._conditions)
+        }, this._params);
 
+    this._model[this._action](query, function(err, result) {
+        if (err) {
+            defer.reject(err);
+            return;
+        }
+
+        defer.resolve(result);
+    });
+
+    return defer.promise.then(onFulfill, onReject);
 };
 
 

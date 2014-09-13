@@ -78,14 +78,11 @@ function Collection_model(_this, model) {
     if (models[className]) {
         throw new Error("Collection model(model) Collection already has model with class name " + className);
     }
-    if (models[tableName]) {
-        throw new Error("Collection model(model) Collection already has model with table name " + tableName);
-    }
 
     model.collection = _this;
     model.schema = _this.schema.createTable(tableName);
 
-    models[tableName] = model;
+    models[className] = model;
 }
 
 

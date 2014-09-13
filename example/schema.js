@@ -2,9 +2,10 @@ module.exports = {
     users: {
         firstName: "string",
         lastName: "string",
+        age: "integer",
         email: {
-            type: "string",
-            unique: true
+            unique: true,
+            type: "string"
         },
         password: "string",
         timestamps: true
@@ -12,7 +13,6 @@ module.exports = {
     carts: {
         title: "string",
         content: "string",
-
         belongsTo: "user",
         timestamps: true
     }
