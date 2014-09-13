@@ -3,6 +3,7 @@ var EventEmitter = require("event_emitter"),
     type = require("type"),
     each = require("each");
 
+
 var allowedTypes = [
         "string",
         "text",
@@ -52,7 +53,7 @@ Table.prototype.init = function() {
 
     each(this._functions, function(args, functionName) {
 
-        schema.functions[functionName](schema, _this, args[0], args[1]);
+        schema.functions[functionName].method(schema, _this, args[0], args[1]);
     });
     this._keys = utils.keys(this.columns);
 
@@ -60,10 +61,22 @@ Table.prototype.init = function() {
 };
 
 Table.prototype.hooks = function(model) {
+    var schema = this.schema;
 
     each(this._functions, function(_, functionName) {
+        var events = schema.functions[functionName].events;
 
-        // add event hooks
+        if (type.isObject(events)) {
+            each(events, function(event, eventType) {
+                if (type.isArray(event)) {
+                    each(event, function(e) {
+                        model.on(eventType, e);
+                    });
+                } else {
+                    model.on(eventType, event);
+                }
+            });
+        }
     });
 };
 
@@ -73,7 +86,7 @@ Table.prototype.column = function(columnName) {
 
     if (!column) {
         throw new Error(
-            "Table.column(columnName)\n" +
+            "Table.column(columnName)\n" + ~
             "    table " + this.tableName + " does not have a column named " + columnName
         );
     }
@@ -208,7 +221,7 @@ function Table_parseType(_this, columnName, value) {
 
 function Table_parseFunction(_this, functionName, attributes, options) {
 
-    if (type.isFunction(_this.schema.functions[functionName])) {
+    if (utils.has(_this.schema.functions, functionName)) {
         _this._functions[functionName] = [attributes, options];
         return true;
     }

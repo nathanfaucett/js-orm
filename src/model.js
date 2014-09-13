@@ -67,8 +67,11 @@ Model.prototype.new = function(attributes) {
 };
 
 Model.prototype.create = function(attributes, callback) {
+    var model = this.new(attributes)
 
-    return this.save(this.new(attributes), callback);
+    this.emit("beforeCreate", model);
+
+    return this.save(model, callback);
 };
 
 Model.prototype.save = function(model, callback) {

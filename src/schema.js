@@ -2,6 +2,7 @@ var EventEmitter = require("event_emitter"),
     utils = require("utils"),
     type = require("type"),
     each = require("each"),
+    inflect = require("inflect"),
 
     Table = require("./table");
 
@@ -67,9 +68,9 @@ Schema.prototype.createTable = function(tableName) {
     return table;
 };
 
-Schema.prototype.defineFunction = function(name, func) {
+Schema.prototype.defineFunction = function(name, events, method) {
 
-    this.functions[name] = func;
+    this.functions[name] = new SchemaFunction(events, method);
 };
 
 Schema.prototype.toJSON = function(numOfSpacesPerTab) {
@@ -90,32 +91,115 @@ Schema.prototype.toExports = function(numOfSpacesPerTab) {
 };
 
 
+function SchemaFunction(events, method) {
+
+    this.method = method;
+    this.events = events;
+}
+
 Schema.functions = {};
 
-Schema.defineFunction = function(name, func) {
+Schema.defineFunction = function(name, events, method) {
 
-    Schema.functions[name] = func;
+    Schema.functions[name] = new SchemaFunction(events, method);
 };
 
-Schema.defineFunction("timestamps", function timestamps(schema, table, column, options) {
-    var createdAt = "createdAt",
-        updatedAt = "updatedAt",
-        now = {
-            type: "datetime",
-            defaultsTo: "NOW"
-        };
+Schema.defineFunction("timestamps", {
+        "beforeCreate": function(model) {
+            model.createdAt = new Date();
+        },
+        "beforeSave": function(model) {
+            model.updatedAt = new Date();
+        }
+    },
+    function timestamps(schema, table, column, options) {
+        var createdAt = "createdAt",
+            updatedAt = "updatedAt",
+            now = {
+                type: "datetime",
+                defaultsTo: "NOW"
+            };
 
-    if (options.underscore === true || options.camelcase === false) {
-        createdAt = "created_at";
-        updatedAt = "updated_at";
+        if (options.underscore === true || options.camelcase === false) {
+            createdAt = "created_at";
+            updatedAt = "updated_at";
+        }
+
+        table.addFunctionColumn(createdAt, now, options);
+        table.addFunctionColumn(updatedAt, now, options);
     }
+);
 
-    table.addFunctionColumn(createdAt, now, options);
-    table.addFunctionColumn(updatedAt, now, options);
+Schema.defineFunction("hasMany", null, function hasMany(schema, table, column, options) {
+    var modelName, modelTable, columnName, modelColumn;
+
+    column = type.isString(column) ? {
+        collection: column
+    } : column;
+
+    modelName = column.collection;
+    modelTable = schema.table(modelName);
+    modelColumn = modelTable.column(options.key || (options.key = "id"));
+
+    columnName = inflect.foreignKey(
+        inflect.singularize(table.tableName, options.locale),
+        options.key,
+        options.camelcase === true || options.underscore !== false,
+        true
+    );
+
+    modelTable.addFunctionColumn(columnName, {
+        type: modelColumn.type,
+        foreignKey: true
+    }, options);
 });
 
-Schema.defineFunction("hasMany", function hasMany(schema, table, column, options) {
+Schema.defineFunction("hasOne", null, function hasMany(schema, table, column, options) {
+    var modelName, modelTable, columnName, modelColumn;
 
+    column = type.isString(column) ? {
+        model: column
+    } : column;
+
+    modelName = inflect.pluralize(column.model, options.locale),
+    modelTable = schema.table(modelName);
+    modelColumn = modelTable.column(options.key || (options.key = "id"));
+
+    columnName = inflect.foreignKey(
+        inflect.singularize(table.tableName, options.locale),
+        options.key,
+        options.camelcase === true || options.underscore !== false,
+        true
+    );
+
+    modelTable.addFunctionColumn(columnName, {
+        type: modelColumn.type,
+        foreignKey: true
+    }, options);
+});
+
+Schema.defineFunction("belongsTo", null, function belongsTo(schema, table, column, options) {
+    var modelName, modelTable, columnName, modelColumn;
+
+    column = type.isString(column) ? {
+        model: column
+    } : column;
+
+    modelName = inflect.pluralize(column.model, options.locale),
+    modelTable = schema.table(modelName);
+    modelColumn = modelTable.column(options.key || (options.key = "id"));
+
+    columnName = inflect.foreignKey(
+        column.model,
+        options.key,
+        options.camelcase === true || options.underscore !== false,
+        true
+    );
+
+    table.addFunctionColumn(columnName, {
+        type: modelColumn.type,
+        foreignKey: true
+    }, options);
 });
 
 

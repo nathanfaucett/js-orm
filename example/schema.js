@@ -7,13 +7,13 @@ module.exports = {
             unique: true
         },
         password: "string",
-        //hasMany: "carts",
         timestamps: true
     },
     carts: {
         title: "string",
         content: "string",
-        //belongsTo: "user"
+
+        belongsTo: "user",
         timestamps: true
     }
 };

@@ -85,7 +85,7 @@ function Collection_model(_this, model) {
     model.collection = _this;
     model.schema = _this.schema.createTable(tableName);
 
-    models[className] = models[tableName] = model;
+    models[tableName] = model;
 }
 
 
