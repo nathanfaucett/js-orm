@@ -26,6 +26,7 @@
     "event_emitter": "nathanfaucett/event_emitter",
     "inflect": "nathanfaucett/inflect",
     "promise": "nathanfaucett/promise",
+    "qs": "git://github.com/nathanfaucett/qs",
     "request": "git://github.com/nathanfaucett/request",
     "type": "nathanfaucett/type",
     "utils": "nathanfaucett/utils"

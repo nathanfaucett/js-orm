@@ -1,6 +1,7 @@
 var utils = require("utils"),
     each = require("each"),
     type = require("type"),
+    qs = require("qs"),
     request = require("request");
 
 
@@ -15,48 +16,6 @@ var defaultPaths = {
     deleteWhere: "/deleteWhere",
     deleteAll: "/deleteAll"
 };
-
-
-function stringify(obj, prefix) {
-    var values = [],
-        key;
-
-    if (Buffer.isBuffer(obj)) {
-        obj = obj.toString();
-    } else if (obj instanceof Date) {
-        obj = obj.toISOString();
-    } else if (obj == null) {
-        obj = "";
-    }
-
-    if (typeof(obj) === "string" ||
-        typeof(obj) === "number" ||
-        typeof(obj) === "boolean") {
-
-        return [encodeURIComponent(prefix) + "=" + encodeURIComponent(obj)];
-    }
-
-    for (key in obj) {
-        if (obj.hasOwnProperty(key)) {
-            values = values.concat(stringify(obj[key], prefix + "[" + key + "]"));
-        }
-    }
-
-    return values;
-}
-
-function qsStringify(obj) {
-    var keys = [],
-        key;
-
-    for (key in obj) {
-        if (obj.hasOwnProperty(key)) {
-            keys = keys.concat(stringify(obj[key], key));
-        }
-    }
-
-    return keys.join("&");
-}
 
 
 function HttpAdaptor(options) {
@@ -102,7 +61,7 @@ HttpAdaptor.prototype.init = function(callback) {
 HttpAdaptor.prototype.save = function(tableName, params, callback) {
 
     request.get({
-        url: this.paths[tableName].save + "?" + qsStringify(params),
+        url: this.paths[tableName].save + "?" + qs.stringify(params),
         type: "json",
         success: function(response) {
             callback(undefined, response.data);
@@ -117,7 +76,7 @@ HttpAdaptor.prototype.save = function(tableName, params, callback) {
 HttpAdaptor.prototype.update = function(tableName, params, callback) {
 
     request.get({
-        url: this.paths[tableName].update + "?" + qsStringify(params),
+        url: this.paths[tableName].update + "?" + qs.stringify(params),
         type: "json",
         success: function(response) {
             callback(undefined, response.data);
@@ -147,7 +106,7 @@ HttpAdaptor.prototype.all = function(tableName, callback) {
 HttpAdaptor.prototype.find = function(tableName, query, callback) {
 
     request.get({
-        url: this.paths[tableName].find + "?" + qsStringify(query),
+        url: this.paths[tableName].find + "?" + qs.stringify(query),
         type: "json",
         success: function(response) {
             callback(undefined, response.data);
@@ -162,7 +121,7 @@ HttpAdaptor.prototype.find = function(tableName, query, callback) {
 HttpAdaptor.prototype.findOne = function(tableName, query, callback) {
 
     request.get({
-        url: this.paths[tableName].findOne + "?" + qsStringify(query),
+        url: this.paths[tableName].findOne + "?" + qs.stringify(query),
         type: "json",
         success: function(response) {
             callback(undefined, response.data);
@@ -207,7 +166,7 @@ HttpAdaptor.prototype["delete"] = function(tableName, id, callback) {
 HttpAdaptor.prototype.deleteWhere = function(tableName, query, callback) {
 
     request.get({
-        url: this.paths[tableName].deleteWhere + "?" + qsStringify(query),
+        url: this.paths[tableName].deleteWhere + "?" + qs.stringify(query),
         type: "json",
         success: function(response) {
             callback(undefined, response.data);

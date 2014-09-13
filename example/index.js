@@ -6,19 +6,14 @@ var collection = require("./collection"),
 User.adaptor = "http";
 Cart.adaptor = "http";
 
-collection.init(function(errors) {
-    if (errors) {
-        console.log(errors);
-        return;
-    }
-
+function makeRequest() {
     console.time("findOne");
     User.findOne()
-        .asc("age")
-        .skip(1)
+        .where("firstName", "Nathan")
         .then(
             function(user) {
                 console.timeEnd("findOne");
+                console.log(user);
 
                 console.time("findByUserId");
                 Cart.findByUserId(user.id)
@@ -36,4 +31,14 @@ collection.init(function(errors) {
                 console.log(err);
             }
     );
+}
+global.makeRequest = makeRequest;
+
+collection.init(function(errors) {
+    if (errors) {
+        console.log(errors);
+        return;
+    }
+
+    makeRequest();
 });
