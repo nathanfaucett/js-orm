@@ -44,6 +44,11 @@ var User = new orm.Model({
     adaptor: "memory"
 });
 
+User.prototype.hello = function() {
+  
+    return "hello " + this.firstName +"!";
+};
+
 // User.prototype is an object that the User instance classes, created after init, will inherit from
 Object.defineProperty(User.prototype, "fullName", {
     get: function() {
@@ -80,5 +85,5 @@ notes on the example
 
 in server folder install npm deps and then listen on localhost 3000 by exec node index.js
 
-in the they will be some errors in the console its just require.js trying to find the node
+they will be some errors in the console its just require.js trying to find the node
 modules
