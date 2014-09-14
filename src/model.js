@@ -2,9 +2,14 @@ var EventEmitter = require("event_emitter"),
     inflect = require("inflect"),
     type = require("type"),
     each = require("each"),
+    utils = require("utils"),
     Promise = require("promise"),
+    validator = require("validator"),
 
     Query = require("./query");
+
+
+var slice = Array.prototype.slice;
 
 
 function Model(options) {
@@ -26,6 +31,9 @@ function Model(options) {
     this.collection = null;
     this.schema = null;
 
+    this.validations = {};
+    this._wrappers = {};
+
     this.Class = null;
     this.prototype = {};
 
@@ -34,6 +42,9 @@ function Model(options) {
 EventEmitter.extend(Model);
 
 Model.prototype.init = function() {
+    var schema = this.schema,
+        validations = this.validations;
+
     if (type.isString(this.adaptor)) {
         this.adaptor = this.collection.adaptors[this.adaptor];
     }
@@ -41,7 +52,7 @@ Model.prototype.init = function() {
         throw new Error("Model.init() no adaptor found with passed adaptor " + this.adaptor);
     }
 
-    this.schema.hooks(this);
+    schema.hooks(this);
 
     this.generateClass();
 
@@ -67,7 +78,7 @@ Model.prototype.new = function(attributes) {
 };
 
 Model.prototype.create = function(attributes, callback) {
-    var model = this.new(attributes)
+    var model = this.new(attributes);
 
     this.emit("beforeCreate", model);
 
@@ -75,9 +86,20 @@ Model.prototype.create = function(attributes, callback) {
 };
 
 Model.prototype.save = function(model, callback) {
-    var _this = this;
+    var _this = this,
+        errors;
 
     model = this.schema.filter(model);
+    errors = this.validate(model);
+
+    if (errors) {
+        if (type.isFunction(callback)) {
+            callback(errors);
+            return null;
+        } else {
+            return Promise.reject(errors);
+        }
+    }
 
     this.emit("beforeSave", model);
 
@@ -110,9 +132,20 @@ Model.prototype.save = function(model, callback) {
 };
 
 Model.prototype.update = function(model, callback) {
-    var _this = this;
+    var _this = this,
+        errors;
 
     model = this.schema.filter(model);
+    errors = this.validate(model);
+
+    if (errors) {
+        if (type.isFunction(callback)) {
+            callback(errors);
+            return null;
+        } else {
+            return Promise.reject(errors);
+        }
+    }
 
     this.emit("beforeUpdate", model);
 
@@ -350,9 +383,57 @@ Model.prototype.deleteAll = function(callback) {
     });
 };
 
-Model.prototype.validate = function(values, action) {
+Model.prototype.validates = function(columnName) {
+    var validations = this.validations,
+        wrappers = this._wrappers,
+        validation = validations[columnName] || (validations[columnName] = {}),
+        wrapper = wrappers[columnName];
 
-    return null;
+    if (!wrapper) {
+        wrapper = wrappers[columnName] = {};
+
+        each(validator.rules, function(rule, ruleName) {
+            wrapper[ruleName] = function() {
+                validation[ruleName] = arguments.length > 0 ? slice.call(arguments) : true;
+                return wrapper;
+            };
+        });
+    }
+
+    return wrapper;
+};
+
+Model.prototype.validate = function(values) {
+    var match = validator.match,
+        validations = this.validations,
+        keys = this.schema._keys,
+        i = keys.length,
+        key, validation, value, rule, args, err, error, errors;
+
+    while (i--) {
+        key = keys[i];
+        value = values[key];
+        validation = validations[key];
+
+        if ((value === undefined || value === null) && (!validation || !validation.required)) continue;
+
+        for (rule in validation) {
+            args = validation[rule];
+
+            if (typeof(args) === "boolean") {
+                err = match(rule, value);
+            } else {
+                err = match(rule, value, args);
+            }
+
+            if (err) {
+                (errors || (errors = {}));
+                (errors[key] || (errors[key] = [])).push(err);
+            }
+        }
+    }
+
+    return errors;
 };
 
 Model.prototype.defineFindBy = function(key) {

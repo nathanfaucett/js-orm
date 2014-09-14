@@ -8,8 +8,7 @@ Cart.adaptor = "http";
 
 function makeRequest() {
     console.time("findOne");
-    User.findOne()
-        .where("firstName", "Nathan")
+    User.findById((1 + Math.random() * 2) | 0)
         .then(
             function(user) {
                 console.timeEnd("findOne");
@@ -33,6 +32,7 @@ function makeRequest() {
     );
 }
 global.makeRequest = makeRequest;
+global.collection = collection;
 
 collection.init(function(errors) {
     if (errors) {

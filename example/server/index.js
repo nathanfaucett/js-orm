@@ -24,39 +24,8 @@ router.use(
     new BodyParser()
 );
 
-router.route("/carts/find")
-    .get(
-        function(req, res, next) {
-
-            Cart.find(req.query, function(err, cart) {
-                if (err) {
-                    res.json(404, err);
-                    next();
-                    return;
-                }
-
-                res.json(cart);
-                next();
-            });
-        }
-);
-
-router.route("/users/findOne")
-    .get(
-        function(req, res, next) {
-
-            User.findOne(req.query, function(err, user) {
-                if (err) {
-                    res.json(404, err);
-                    next();
-                    return;
-                }
-
-                res.json(user);
-                next();
-            });
-        }
-);
+require("./carts")(router);
+require("./users")(router);
 
 collection.init(function(errors) {
     if (errors) {

@@ -22,5 +22,13 @@ Object.defineProperty(User.prototype, "fullName", {
     }
 });
 
+User.validates("email")
+    .required()
+    .email();
+
+User.validates("password")
+    .required()
+    .minLength(6);
+
 
 module.exports = User;

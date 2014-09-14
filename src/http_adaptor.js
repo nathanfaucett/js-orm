@@ -6,15 +6,12 @@ var utils = require("utils"),
 
 
 var defaultPaths = {
-    save: "/save",
-    update: "/update",
-    all: "/all",
     find: "/find",
-    findOne: "/findOne",
-    findById: "/findById",
+    findOne: "/find_one",
     "delete": "/delete",
-    deleteWhere: "/deleteWhere",
-    deleteAll: "/deleteAll"
+    deleteOne: "/delete_one",
+    save: "/save",
+    update: "/update"
 };
 
 
@@ -91,7 +88,7 @@ HttpAdaptor.prototype.update = function(tableName, params, callback) {
 HttpAdaptor.prototype.all = function(tableName, callback) {
 
     request.get({
-        url: this.paths[tableName].all,
+        url: this.paths[tableName].find,
         type: "json",
         success: function(response) {
             callback(undefined, response.data);
@@ -136,7 +133,7 @@ HttpAdaptor.prototype.findOne = function(tableName, query, callback) {
 HttpAdaptor.prototype.findById = function(tableName, id, callback) {
 
     request.get({
-        url: this.paths[tableName].findById + "?id=" + id,
+        url: this.paths[tableName].findOne + "?where%5Bid%5D=" + id,
         type: "json",
         success: function(response) {
             callback(undefined, response.data);
@@ -151,7 +148,7 @@ HttpAdaptor.prototype.findById = function(tableName, id, callback) {
 HttpAdaptor.prototype["delete"] = function(tableName, id, callback) {
 
     request.get({
-        url: this.paths[tableName]["delete"] + "?id=" + id,
+        url: this.paths[tableName].deleteOne + "?where%5Bid%5D=" + id,
         type: "json",
         success: function(response) {
             callback(undefined, response.data);
@@ -166,7 +163,7 @@ HttpAdaptor.prototype["delete"] = function(tableName, id, callback) {
 HttpAdaptor.prototype.deleteWhere = function(tableName, query, callback) {
 
     request.get({
-        url: this.paths[tableName].deleteWhere + "?" + qs.stringify(query),
+        url: this.paths[tableName]["delete"] + "?" + qs.stringify(query),
         type: "json",
         success: function(response) {
             callback(undefined, response.data);
@@ -181,7 +178,7 @@ HttpAdaptor.prototype.deleteWhere = function(tableName, query, callback) {
 HttpAdaptor.prototype.deleteAll = function(tableName, callback) {
 
     request.get({
-        url: this.paths[tableName].deleteAll,
+        url: this.paths[tableName]["delete"],
         type: "json",
         success: function(response) {
             callback(undefined, response.data);

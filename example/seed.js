@@ -7,6 +7,8 @@ module.exports = function seed(callback) {
         length = 0,
         errors;
 
+    console.time("seed");
+
     function done(err) {
         length++;
 
@@ -16,6 +18,7 @@ module.exports = function seed(callback) {
             }
             if (--length <= 0) {
                 callback(errors);
+                console.timeEnd("seed");
             }
         }
     }

@@ -70,7 +70,7 @@ var collection = require("../collection");
 
 collection.models.User.adaptor = "http";
 
-db.init(function(err) {
+collection.init(function(err) {
     if (err) {
         console.log(err.message);
         return;
