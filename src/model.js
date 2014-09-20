@@ -90,6 +90,8 @@ Model.prototype.init = function() {
 
     this.generateClass();
 
+    this.emit("init");
+
     return this;
 };
 
@@ -474,8 +476,7 @@ function Model_generateClassPrototype(_this) {
 
         className + ".prototype.save = function (callback) {\n\treturn model.save(this, callback);\n};",
         className + ".prototype.update = function (callback) {\n\treturn model.update(this, callback);\n};",
-        className + ".prototype.destroy = function (callback) {\n\treturn model.destroy(this, callback);\n};",
-        className + ".prototype[\"delete\"] = " + className + ".prototype.destroy;"
+        className + ".prototype.destroy = function (callback) {\n\treturn model.destroy(this, callback);\n};"
     );
 
     return out.join("\n");

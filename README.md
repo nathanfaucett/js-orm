@@ -36,26 +36,28 @@ var orm = require("orm");
 
 var User = orm.define({
     name: "User",
-    adaptor: "memory"
-});
-
-User.prototype.hello = function() {
-  
-    return "hello " + this.firstName +"!";
-};
-
-// User.prototype is an object that the User instance classes, created after init, will inherit from
-Object.defineProperty(User.prototype, "fullName", {
-    get: function() {
-        return this.firstName + " " + this.lastName;
-    },
-    set: function(value) {
-        var split = (value || "").split(/[\s ]+/);
-
-        this.firstName = split[0] || this.firstName;
-        this.lastName = split[1] || this.lastName;
+    
+    schema: {
+        email: {
+            type: "string",
+            unique: true
+        },
+        password: "string"
     }
 });
+
+User.validates("email")
+    .required()
+    .email();
+
+User.validates("password")
+    .required()
+    .minLength(6);
+
+User.prototype.emailPassword = function() {
+  
+    return this.email +" "+ this.password;
+};
 
 module.exports = User;
 ```

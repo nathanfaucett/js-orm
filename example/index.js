@@ -35,9 +35,12 @@ function uid(length) {
 };
 
 
-User.on("beforeCreate", function(model) {
+User.on("init", function() {
 
-    model.password = uid();
+    this.on("beforeCreate", function(model) {
+
+        model.password = uid();
+    });
 });
 
 

@@ -3,28 +3,37 @@ var utils = require("utils"),
     each = require("each");
 
 
-function buildSort(array, key, order) {
-    var test = array[0],
-        typeStr = test && typeof(test[key]);
+function buildSort(columns, key, order) {
+    var typeStr = columns[key].type;
 
-    if (typeStr === "number") {
+    if (typeStr === "float" || typeStr === "integer") {
         return (
             order === "ASC" ?
-            function(a, b) {
+            function sortNumber(a, b) {
                 return a[key] - b[key];
             } :
-            function(a, b) {
+            function sortNumber(a, b) {
                 return b[key] - a[key];
             }
         );
     } else if (typeStr === "string") {
         return (
             order === "ASC" ?
-            function(a, b) {
+            function sortString(a, b) {
                 return a[key] < b[key] ? -1 : 1;
             } :
-            function(a, b) {
+            function sortString(a, b) {
                 return a[key] < b[key] ? 1 : -1;
+            }
+        );
+    } else if (typeStr === "datetime") {
+        return (
+            order === "ASC" ?
+            function sortDate(a, b) {
+                return Date.parse(a[key]) < Date.parse(b[key]) ? -1 : 1;
+            } :
+            function sortDate(a, b) {
+                return Date.parse(a[key]) < Date.parse(b[key]) ? 1 : -1;
             }
         );
     } else {
@@ -32,7 +41,7 @@ function buildSort(array, key, order) {
     }
 }
 
-function queryAll(array, query) {
+function queryAll(columns, array, query) {
     var i = (query.skip || 0) - 1,
         il = array.length,
 
@@ -67,7 +76,7 @@ function queryAll(array, query) {
     }
 
     if (order) {
-        sortFn = buildSort(results, order[0], order[1]);
+        sortFn = buildSort(columns, order[0], order[1]);
 
         if (sortFn) {
             results.sort(sortFn);
@@ -77,7 +86,7 @@ function queryAll(array, query) {
     return results;
 }
 
-function queryOne(array, query) {
+function queryOne(columns, array, query) {
     var i = (query.skip || 0) - 1,
         il = array.length,
 
@@ -207,7 +216,7 @@ MemoryAdaptor.prototype.save = function(tableName, params, callback) {
                 row[key] = null;
             } else {
                 if (columnType === "datetime") {
-                    row[key] = type.isDate(value) ? value.toJSON() : null;
+                    row[key] = type.isDate(value) ? value.toJSON() : (new Date(value).toJSON());
                 } else {
                     row[key] = value;
                 }
@@ -241,7 +250,7 @@ MemoryAdaptor.prototype.update = function(tableName, params, callback) {
 
             if (value !== undefined) {
                 if (columns[key].type === "datetime") {
-                    row[key] = JSON.stringify(value);
+                    row[key] = type.isDate(value) ? value.toJSON() : (new Date(value).toJSON());
                 } else {
                     row[key] = value;
                 }
@@ -257,7 +266,7 @@ MemoryAdaptor.prototype.find = function(tableName, query, callback) {
     var table = this._tables[tableName];
 
     process.nextTick(function() {
-        var rows = queryAll(table.rows, query);
+        var rows = queryAll(table.schema.columns, table.rows, query);
 
         callback(undefined, each.map(rows, utils.copy));
     });
@@ -268,7 +277,7 @@ MemoryAdaptor.prototype.findOne = function(tableName, query, callback) {
     var table = this._tables[tableName];
 
     process.nextTick(function() {
-        var row = queryOne(table.rows, query);
+        var row = queryOne(table.schema[tableName].columns, table.rows, query);
 
         callback(undefined, utils.copy(row));
     });
@@ -302,7 +311,7 @@ MemoryAdaptor.prototype.destroyWhere = function(tableName, query, callback) {
 
     process.nextTick(function() {
         var rows = table.rows,
-            result = queryAll(rows, query),
+            result = queryAll(table.schema.columns, rows, query),
             i = result.length;
 
         while (i--) {
