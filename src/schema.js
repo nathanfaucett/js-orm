@@ -1,7 +1,6 @@
-var EventEmitter = require("event_emitter"),
-    utils = require("utils"),
-    type = require("type"),
+var type = require("type"),
     each = require("each"),
+    utils = require("utils"),
     inflect = require("inflect"),
 
     Table = require("./table");
@@ -10,70 +9,103 @@ var EventEmitter = require("event_emitter"),
 var JSON_REPLACER = /\"(.*?)\"\:/g;
 
 
-function Schema(collection, schema) {
+function Schema(opts) {
+    var options = {};
 
-    EventEmitter.call(this);
+    opts || (opts = {});
 
-    this.collection = collection;
-    this.schema = schema;
+    options.autoId = (opts.autoId != null) ? opts.autoId : true;
+    options.timestamps = (opts.timestamps != null) ? opts.timestamps : true;
 
-    this.tables = utils.create(null);
-    this.functions = utils.copy(Schema.functions);
+    this._options = options;
+
+    this.tables = {};
 }
-EventEmitter.extend(Schema);
 
 Schema.prototype.init = function() {
-    var _this = this,
-        schema = this.schema;
+    var tables = this.tables;
 
-    each(schema, function(columns, tableName) {
-
-        _this.table(tableName).addColumns(columns);
-    });
-    each(this.tables, function(table) {
-
+    each(tables, function(table) {
         table.init();
+    });
+    each(tables, function(table) {
+        table._keys = utils.keys(table.columns);
     });
 
     return this;
 };
 
 Schema.prototype.table = function(tableName) {
-    var tables = this.tables,
-        table = tables[tableName];
+    var table = this.tables[tableName];
 
-    if (!table) {
+    if (table === undefined || table === null) {
         throw new Error(
             "Schema.table(tableName)\n" +
-            "    no table exists named " + tableName
+            "    no table defined named " + tableName
         );
     }
 
     return table;
 };
 
-Schema.prototype.createTable = function(tableName) {
+Schema.prototype.has = function(tableName) {
+
+    return !!this.tables[tableName];
+};
+
+Schema.prototype.create = function(tableName, options) {
     var tables = this.tables,
+        opts = this._options,
         table;
 
     if (tables[tableName]) {
         throw new Error(
-            "Schema.createTable(tableName)\n" +
-            "    a table already exists named " + tableName
+            "Schema.create(tableName, options)\n" +
+            "    table already defined named " + tableName
+        );
+    }
+    options || (options = {});
+
+    options.autoId = (options.autoId === true) ? opts.autoId : options.autoId;
+    options.timestamps = (options.timestamps === true) ? opts.timestamps : options.timestamps;
+
+    table = new Table(tableName, options);
+    table.schema = this;
+
+    return (tables[tableName] = table);
+};
+
+Schema.prototype.add = function(table) {
+    var tables = this.tables,
+        opts = this._options,
+        options = table._options,
+        tableName;
+
+    if (!(table instanceof Table)) {
+        throw new Error(
+            "Schema.add(table)\n" +
+            "    table must be an instance of Table"
         );
     }
 
-    table = tables[tableName] = new Table(this, tableName);
+    tableName = table.tableName
 
-    return table;
+    if (tables[tableName]) {
+        throw new Error(
+            "Schema.add(table)\n" +
+            "    table already defined named " + tableName
+        );
+    }
+
+    options.autoId = (options.autoId === true) ? opts.autoId : options.autoId;
+    options.timestamps = (options.timestamps === true) ? opts.timestamps : options.timestamps;
+
+    table.schema = this;
+
+    return (tables[tableName] = table);
 };
 
-Schema.prototype.defineFunction = function(name, events, method) {
-
-    this.functions[name] = new SchemaFunction(events, method);
-};
-
-Schema.prototype.toJSON = function(numOfSpacesPerTab) {
+Schema.prototype.toJSON = function() {
     var json = {};
 
     each(this.tables, function(table, tableName) {
@@ -83,136 +115,31 @@ Schema.prototype.toJSON = function(numOfSpacesPerTab) {
     return json;
 };
 
+Schema.prototype.fromJSON = function(json) {
+    var _this = this,
+        options = this._options;
+
+    each(json, function(columns, tableName) {
+        var opts = options[tableName];
+
+        if (opts) {
+            delete options[tableName];
+        } else {
+            opts = options;
+        }
+
+        _this.create(tableName, opts).addColumns(columns);
+    });
+
+    return this
+};
+
 Schema.prototype.toExports = function(numOfSpacesPerTab) {
 
     return "module.exports = " + JSON.stringify(this.toJSON(), null, +numOfSpacesPerTab || 4).replace(JSON_REPLACER, function(match, key) {
         return key + ":";
     }) + ";\n";
 };
-
-
-function SchemaFunction(events, method) {
-
-    this.method = method;
-    this.events = events;
-}
-
-Schema.functions = {};
-
-Schema.defineFunction = function(name, events, method) {
-
-    Schema.functions[name] = new SchemaFunction(events, method);
-};
-
-Schema.defineFunction("timestamps", {
-        "beforeCreate": function(model) {
-            model.createdAt = new Date();
-        },
-        "beforeSave": function(model) {
-            model.updatedAt = new Date();
-        }
-    },
-    function timestamps(schema, table, column, options) {
-        var createdAt = "createdAt",
-            updatedAt = "updatedAt",
-            now = {
-                type: "datetime",
-                defaultsTo: "NOW"
-            };
-
-        if (options.underscore === true || options.camelcase === false) {
-            createdAt = "created_at";
-            updatedAt = "updated_at";
-        }
-
-        table.addFunctionColumn(createdAt, now, options);
-        table.addFunctionColumn(updatedAt, now, options);
-    }
-);
-
-Schema.defineFunction("hasMany", null, function hasMany(schema, table, column, options) {
-    var modelName, modelTable, columnName, modelColumn, model;
-
-    column = type.isString(column) ? {
-        collection: column
-    } : column;
-
-    modelName = column.collection;
-    modelTable = schema.table(modelName);
-    modelColumn = modelTable.column(options.key || (options.key = "id"));
-
-    columnName = inflect.foreignKey(
-        inflect.singularize(table.tableName, options.locale),
-        options.key,
-        options.camelcase === true || options.underscore !== false,
-        true
-    );
-
-    model = schema.collection.models[inflect.classify(modelName, options.locale)];
-    model.defineFindBy(columnName);
-    model.defineFindOneBy(columnName);
-
-    modelTable.addFunctionColumn(columnName, {
-        type: modelColumn.type,
-        foreignKey: true
-    }, options);
-});
-
-Schema.defineFunction("hasOne", null, function hasMany(schema, table, column, options) {
-    var modelName, modelTable, columnName, modelColumn, model;
-
-    column = type.isString(column) ? {
-        model: column
-    } : column;
-
-    modelName = inflect.pluralize(column.model, options.locale),
-    modelTable = schema.table(modelName);
-    modelColumn = modelTable.column(options.key || (options.key = "id"));
-
-    columnName = inflect.foreignKey(
-        inflect.singularize(table.tableName, options.locale),
-        options.key,
-        options.camelcase === true || options.underscore !== false,
-        true
-    );
-
-    model = schema.collection.models[inflect.classify(modelName, options.locale)];
-    model.defineFindBy(columnName);
-    model.defineFindOneBy(columnName);
-
-    modelTable.addFunctionColumn(columnName, {
-        type: modelColumn.type,
-        foreignKey: true
-    }, options);
-});
-
-Schema.defineFunction("belongsTo", null, function belongsTo(schema, table, column, options) {
-    var modelName, modelTable, columnName, modelColumn, model;
-
-    column = type.isString(column) ? {
-        model: column
-    } : column;
-
-    modelName = inflect.pluralize(column.model, options.locale),
-    modelTable = schema.table(modelName);
-    modelColumn = modelTable.column(options.key || (options.key = "id"));
-
-    columnName = inflect.foreignKey(
-        column.model,
-        options.key,
-        options.camelcase === true || options.underscore !== false,
-        true
-    );
-
-    model = schema.collection.models[inflect.classify(table.tableName, options.locale)];
-    model.defineFindBy(columnName);
-    model.defineFindOneBy(columnName);
-
-    table.addFunctionColumn(columnName, {
-        type: modelColumn.type,
-        foreignKey: true
-    }, options);
-});
 
 
 module.exports = Schema;

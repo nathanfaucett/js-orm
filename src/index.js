@@ -1,8 +1,19 @@
-var orm = module.exports;
+var Collection = require("./collection"),
+    Model = require("./model");
 
 
-orm.Collection = require("./collection");
-orm.Model = require("./model");
+function orm(options) {
 
-orm.HttpAdaptor = require("./http_adaptor");
+    return new Collection(options);
+}
+
+orm.define = function define(options) {
+
+    return new Model(options);
+};
+
+
 orm.MemoryAdaptor = require("./memory_adaptor");
+
+
+module.exports = orm;

@@ -1,9 +1,14 @@
 var orm = require("../../src/index.js");
 
 
-var Cart = new orm.Model({
+var Cart = new orm.define({
     name: "Cart",
-    adaptor: "memory"
+
+    schema: {
+        title: "string",
+        content: "string",
+        belongsTo: "user"
+    }
 });
 
 

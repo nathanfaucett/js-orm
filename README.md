@@ -5,41 +5,36 @@ object relational mapping for node.js
 
 ###Usage
 
-create a new orm.Collection
+create a new Collection
 
 ```javascript
 var orm = require("orm");
 
-var collection = new orm.Collection({
+var collection = orm({
 
-    schema: require("./path/to/schema"),
+    schema: {
+        timestamps: true
+    },
 
     adaptors: {
-        http: new orm.HttpAdaptor({
-            url: "127.0.0.1:3000",
-            paths: {
-              users: {
-                url: "www.users.com"
-              }
-            }
-        })
+        http: new orm.MemoryAdaptor()
     }
 });
 
-collection.model(
-  require("./path/to/user_model")
-  require("./path/to/other_model")
+collection.bindModels(
+    require("./path/to/user_model"),
+    require("./path/to/other_model")
 );
 
 module.exports = collection;
 ```
 
-create a Model
+difine a Model
 
 ```javascript
 var orm = require("orm");
 
-var User = new orm.Model({
+var User = orm.define({
     name: "User",
     adaptor: "memory"
 });
@@ -68,7 +63,7 @@ module.exports = User;
 ```javascript
 var collection = require("../collection");
 
-collection.models.User.adaptor = "http";
+collection.models.User.adaptor = "memory";
 
 collection.init(function(err) {
     if (err) {
@@ -79,11 +74,3 @@ collection.init(function(err) {
     // start application
 });
 ```
-
-notes on the example
-=====
-
-in server folder install npm deps and then listen on localhost 3000 by exec node index.js
-
-they will be some errors in the console its just require.js trying to find the node
-modules

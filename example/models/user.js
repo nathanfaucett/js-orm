@@ -4,9 +4,19 @@ var orm = require("../../src/index.js");
 var SPLITER = /[\s ]+/;
 
 
-var User = new orm.Model({
+var User = new orm.define({
     name: "User",
-    adaptor: "memory"
+
+    schema: {
+        firstName: "string",
+        lastName: "string",
+        age: "integer",
+        email: {
+            type: "string",
+            unique: true
+        },
+        password: "string"
+    }
 });
 
 

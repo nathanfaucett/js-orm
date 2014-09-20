@@ -1,95 +1,130 @@
 var EventEmitter = require("event_emitter"),
-    inflect = require("inflect"),
-    type = require("type"),
     each = require("each"),
-    utils = require("utils"),
+    type = require("type"),
+    inflect = require("inflect"),
     Promise = require("promise"),
     validator = require("validator"),
 
-    Query = require("./query");
+    Query = require("./query"),
+    Table = require("./table"),
+    hooks = require("./hooks");
 
 
 var slice = Array.prototype.slice;
 
 
-function Model(options) {
-    if (!(this instanceof Model)) return new Model(options);
+function Model(opts) {
+    var options = {};
 
-    options || (options = {});
+    opts || (opts = {});
 
-    if (!type.isString(options.name)) {
-        throw new Error("Model(options) name must be a string");
+    if (!type.isString(opts.name) && !type.isString(opts.className)) {
+        throw new Error(
+            "Model(options)\n" +
+            "    options.name or options.className required as string ex {name: 'User'}"
+        );
     }
+
+    options.columns = opts.columns || opts.schema;
+
+    options.className = opts.name || opts.className;
+    options.tableName = type.isString(opts.tableName) ? opts.tableName : inflect.tableize(options.className);
+
+    options.autoId = (opts.autoId != null) ? opts.autoId : true;
+    options.timestamps = (opts.timestamps != null) ? opts.timestamps : true;
 
     EventEmitter.call(this);
 
-    this.adaptor = options.adaptor;
+    this._options = options;
 
-    this.className = inflect.capitalize(options.name);
-    this.tableName = type.isString(options.tableName) ? options.tableName : inflect.tableize(this.className, options.locale);
+    this._init = false;
+    this._collection = null;
 
-    this.collection = null;
-    this.schema = null;
-
-    this.validations = {};
+    this._validations = {};
     this._wrappers = {};
 
-    this.Class = null;
-    this.prototype = {};
+    this._schema = new Table(options.tableName, options);
 
-    return this;
+    this.adaptor = opts.adaptor;
+
+    this.className = options.className;
+    this.tableName = options.tableName;
+
+    this.prototype = {};
 }
 EventEmitter.extend(Model);
 
 Model.prototype.init = function() {
-    var schema = this.schema,
-        validations = this.validations;
+    var _this = this,
+        adaptor = this.adaptor,
+        schema = this._schema;
 
-    if (type.isString(this.adaptor)) {
-        this.adaptor = this.collection.adaptors[this.adaptor];
-    }
-    if (!this.adaptor) {
-        throw new Error("Model.init() no adaptor found with passed adaptor " + this.adaptor);
-    }
+    each(schema._functions, function(options, name) {
+        var hookFunc = hooks[name],
+            hook;
 
-    schema.hooks(this);
+        if (!type.isFunction(hookFunc)) return;
+
+        hook = hookFunc(type.isObject(options) ? options : {})
+
+        each(hook.events, function(event, eventType) {
+            if (type.isArray(event)) {
+                each(event, function(e) {
+                    _this.on(eventType, e);
+                });
+            } else if (type.isFunction(event)) {
+                _this.on(eventType, event);
+            }
+        });
+    });
+    each(schema.columns, function(column, name) {
+
+        _this.validates(name).type(column.type);
+    });
+
+    if (type.isString(adaptor)) {
+        this.adaptor = this._collection.adaptor(adaptor);
+    } else {
+        this.adaptor = adaptor;
+    }
 
     this.generateClass();
 
     return this;
 };
 
-Model.prototype.new = function(attributes) {
-    var instance = new this.Class,
-        keys, key, attribute, i;
+Model.prototype.build = function(attributes) {
+    var instance = new this.Class(),
+        schema, columns, keys, key, attribute, i;
 
     if (type.isObject(attributes)) {
-        keys = this.schema._keys;
+        schema = this._schema;
+        columns = schema.columns;
+        keys = schema._keys;
         i = keys.length;
 
         while (i--) {
             key = keys[i];
             attribute = attributes[key];
-            if (!(attribute === undefined || attribute === null)) instance[key] = attribute;
+
+            if (attribute !== undefined && attribute !== null) {
+                instance[key] = attribute;
+            }
         }
     }
 
     return instance;
 };
 
+Model.prototype["new"] = Model.prototype.build;
+
 Model.prototype.create = function(attributes, callback) {
-    var model = this.new(attributes);
-
-    this.emit("beforeCreate", model);
-
-    return this.save(model, callback);
-};
-
-Model.prototype.save = function(model, callback) {
     var _this = this,
+        model = this.build(attributes),
         errors;
 
-    model = this.schema.filter(model);
+    this._schema.coerce(model);
+    this.emit("beforeValidate", model);
     errors = this.validate(model);
 
     if (errors) {
@@ -101,6 +136,55 @@ Model.prototype.save = function(model, callback) {
         }
     }
 
+    this.emit("validate", model);
+    this.emit("beforeCreate", model);
+
+    if (type.isFunction(callback)) {
+        this.adaptor.save(this.tableName, model, function(err, row) {
+            if (err) {
+                callback(err);
+                return;
+            }
+
+            row = _this.build(row);
+            _this.emit("create", row);
+            callback(undefined, row);
+        });
+        return null;
+    }
+
+    return new Promise(function(resolve, reject) {
+        _this.adaptor.save(_this.tableName, model, function(err, row) {
+            if (err) {
+                reject(err);
+                return;
+            }
+
+            row = _this.build(row);
+            _this.emit("create", row);
+            resolve(row);
+        });
+    });
+};
+
+Model.prototype.save = function(model, callback) {
+    var _this = this,
+        errors;
+
+    model = this._schema.filter(model);
+    this.emit("beforeValidate", model);
+    errors = this.validate(model);
+
+    if (errors) {
+        if (type.isFunction(callback)) {
+            callback(errors);
+            return null;
+        } else {
+            return Promise.reject(errors);
+        }
+    }
+
+    this.emit("validate", model);
     this.emit("beforeSave", model);
 
     if (type.isFunction(callback)) {
@@ -110,7 +194,7 @@ Model.prototype.save = function(model, callback) {
                 return;
             }
 
-            row = _this.new(row);
+            row = _this.build(row);
             _this.emit("save", row);
             callback(undefined, row);
         });
@@ -124,7 +208,7 @@ Model.prototype.save = function(model, callback) {
                 return;
             }
 
-            row = _this.new(row);
+            row = _this.build(row);
             _this.emit("save", row);
             resolve(row);
         });
@@ -135,7 +219,8 @@ Model.prototype.update = function(model, callback) {
     var _this = this,
         errors;
 
-    model = this.schema.filter(model);
+    model = this._schema.filter(model);
+    this.emit("beforeValidate", model);
     errors = this.validate(model);
 
     if (errors) {
@@ -147,6 +232,7 @@ Model.prototype.update = function(model, callback) {
         }
     }
 
+    this.emit("validate", model);
     this.emit("beforeUpdate", model);
 
     if (type.isFunction(callback)) {
@@ -156,7 +242,7 @@ Model.prototype.update = function(model, callback) {
                 return;
             }
 
-            row = _this.new(row);
+            row = _this.build(row);
             _this.emit("update", row);
             callback(undefined, row);
         });
@@ -170,36 +256,9 @@ Model.prototype.update = function(model, callback) {
                 return;
             }
 
-            row = _this.new(row);
+            row = _this.build(row);
             _this.emit("update", row);
             resolve(row);
-        });
-    });
-};
-
-Model.prototype.all = function(callback) {
-    var _this = this;
-
-    if (type.isFunction(callback)) {
-        this.adaptor.all(this.tableName, function(err, rows) {
-            if (err) {
-                callback(err);
-                return;
-            }
-
-            callback(undefined, Model_toModels(_this, rows));
-        });
-        return null;
-    }
-
-    return new Promise(function(resolve, reject) {
-        _this.adaptor.all(_this.tableName, function(err, rows) {
-            if (err) {
-                reject(err);
-                return;
-            }
-
-            resolve(Model_toModels(_this, rows));
         });
     });
 };
@@ -250,7 +309,7 @@ Model.prototype.findOne = function(query, callback) {
                 return;
             }
 
-            callback(undefined, _this.new(row));
+            callback(undefined, _this.build(row));
         });
         return null;
     }
@@ -258,67 +317,40 @@ Model.prototype.findOne = function(query, callback) {
     return new Query(this, "findOne", query);
 };
 
-Model.prototype.findById = function(id, callback) {
+Model.prototype.destroy = function(model, callback) {
     var _this = this;
 
+    this.emit("beforeDestroy", model);
+
     if (type.isFunction(callback)) {
-        this.adaptor.findById(this.tableName, id, function(err, row) {
+        this.adaptor.destroy(this.tableName, model, function(err, row) {
             if (err) {
                 callback(err);
                 return;
             }
 
-            callback(undefined, _this.new(row));
-        });
-        return null;
-    }
-
-    return new Promise(function(resolve, reject) {
-        _this.adaptor.findById(_this.tableName, id, function(err, row) {
-            if (err) {
-                reject(err);
-                return;
-            }
-
-            resolve(_this.new(row));
-        });
-    });
-};
-
-Model.prototype["delete"] = function(model, callback) {
-    var _this = this;
-
-    this.emit("beforeDelete", model);
-
-    if (type.isFunction(callback)) {
-        this.adaptor["delete"](this.tableName, model.id, function(err, row) {
-            if (err) {
-                callback(err);
-                return;
-            }
-
-            row = _this.new(row);
-            _this.emit("delete", row);
+            row = _this.build(row);
+            _this.emit("destroy", row);
             callback(undefined, row);
         });
         return null;
     }
 
     return new Promise(function(resolve, reject) {
-        _this.adaptor["delete"](_this.tableName, model.id, function(err, row) {
+        _this.adaptor.destroy(_this.tableName, model, function(err, row) {
             if (err) {
                 reject(err);
                 return;
             }
 
-            row = _this.new(row);
-            _this.emit("delete", row);
+            row = _this.build(row);
+            _this.emit("destroy", row);
             resolve(row);
         });
     });
 };
 
-Model.prototype.deleteWhere = function(query, callback) {
+Model.prototype.destroyWhere = function(query, callback) {
     var _this = this;
 
     if (type.isFunction(query)) {
@@ -327,64 +359,27 @@ Model.prototype.deleteWhere = function(query, callback) {
     }
 
     if (type.isFunction(callback)) {
-        this.emit("beforeDeleteWhere");
-
         if (query.where === undefined || query.where === null) {
             query.where = {};
         }
 
-        this.adaptor.deleteWhere(this.tableName, query, function(err, rows) {
-            var i;
-
+        this.adaptor.destroy(this.tableName, query, function(err, rows) {
             if (err) {
                 callback(err);
                 return;
             }
 
-            rows = Model_toModels(_this, rows);
-            i = rows.length;
-            while (i--) _this.emit("delete", rows[i]);
-            callback(undefined, rows);
-        });
-        return null;
-    }
-
-    return new Query(this, "deleteWhere", query);
-};
-
-Model.prototype.deleteAll = function(callback) {
-    var _this = this;
-
-    this.emit("beforeDeleteAll");
-
-    if (type.isFunction(callback)) {
-        this.adaptor.deleteAll(this.tableName, function(err, rows) {
-            if (err) {
-                callback(err);
-                return;
-            }
-
-            _this.emit("deleteAll", rows);
+            _this.emit("destroyWhere", rows);
             callback(undefined, Model_toModels(_this, rows));
         });
         return null;
     }
 
-    return new Promise(function(resolve, reject) {
-        _this.adaptor.deleteAll(_this.tableName, function(err, rows) {
-            if (err) {
-                reject(err);
-                return;
-            }
-
-            _this.emit("deleteAll", rows);
-            resolve(Model_toModels(_this, rows));
-        });
-    });
+    return new Query(this, "destroyWhere", query);
 };
 
 Model.prototype.validates = function(columnName) {
-    var validations = this.validations,
+    var validations = this._validations,
         wrappers = this._wrappers,
         validation = validations[columnName] || (validations[columnName] = {}),
         wrapper = wrappers[columnName];
@@ -405,8 +400,8 @@ Model.prototype.validates = function(columnName) {
 
 Model.prototype.validate = function(values) {
     var match = validator.match,
-        validations = this.validations,
-        keys = this.schema._keys,
+        validations = this._validations,
+        keys = this._schema._keys,
         i = keys.length,
         key, validation, value, rule, args, err, error, errors;
 
@@ -436,76 +431,8 @@ Model.prototype.validate = function(values) {
     return errors;
 };
 
-Model.prototype.defineFindBy = function(key) {
-    this[inflect.camelize("find_by_" + key, true)] = function(value, callback) {
-        var _this = this,
-            query = {
-                where: {}
-            };
-
-        query.where[key] = value;
-
-        if (type.isFunction(callback)) {
-            this.adaptor.find(this.tableName, query, function(err, rows) {
-                if (err) {
-                    callback(err);
-                    return;
-                }
-
-                callback(undefined, Model_toModels(_this, rows));
-            });
-            return null;
-        }
-
-        return new Promise(function(resolve, reject) {
-            _this.adaptor.find(_this.tableName, query, function(err, rows) {
-                if (err) {
-                    reject(err);
-                    return;
-                }
-
-                resolve(Model_toModels(_this, rows));
-            });
-        });
-    };
-};
-
-Model.prototype.defineFindOneBy = function(key) {
-    this[inflect.camelize("find_one_by_" + key, true)] = function(value, callback) {
-        var _this = this,
-            query = {
-                where: {}
-            };
-
-        query.where[key] = value;
-
-        if (type.isFunction(callback)) {
-            this.adaptor.findOne(this.tableName, query, function(err, row) {
-                if (err) {
-                    callback(err);
-                    return;
-                }
-
-                callback(undefined, _this.new(row));
-            });
-            return null;
-        }
-
-        return new Promise(function(resolve, reject) {
-            _this.adaptor.findOne(_this.tableName, query, function(err, row) {
-                if (err) {
-                    reject(err);
-                    return;
-                }
-
-                resolve(_this.new(row));
-            });
-        });
-    };
-};
-
 Model.prototype.generateClass = function() {
-    var collection = this;
+    var model = this;
 
     try {
         eval([
@@ -523,14 +450,14 @@ Model.prototype.generateClass = function() {
 function Model_toModels(_this, array) {
     var i = array.length;
 
-    while (i--) array[i] = _this.new(array[i]);
+    while (i--) array[i] = _this.build(array[i]);
     return array;
 }
 
 function Model_generateClassAttributes(_this) {
     var out = [];
 
-    each(_this.schema.columns, function(_, key) {
+    each(_this._schema.columns, function(_, key) {
         out.push("\tthis." + key + " = null;");
     });
 
@@ -542,12 +469,13 @@ function Model_generateClassPrototype(_this) {
         className = _this.className;
 
     out.push(
-        className + ".prototype = collection.prototype;",
+        className + ".prototype = model.prototype;",
         className + ".prototype.constructor = " + className + ";",
 
-        className + ".prototype.save = function (callback) {\n\treturn collection.save(this, callback);\n};",
-        className + ".prototype.update = function (callback) {\n\treturn collection.update(this, callback);\n};",
-        className + ".prototype.delete = function (callback) {\n\treturn collection.delete(this, callback);\n};"
+        className + ".prototype.save = function (callback) {\n\treturn model.save(this, callback);\n};",
+        className + ".prototype.update = function (callback) {\n\treturn model.update(this, callback);\n};",
+        className + ".prototype.destroy = function (callback) {\n\treturn model.destroy(this, callback);\n};",
+        className + ".prototype[\"delete\"] = " + className + ".prototype.destroy;"
     );
 
     return out.join("\n");

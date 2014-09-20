@@ -1,88 +1,175 @@
-var utils = require("utils"),
+var EventEmitter = require("event_emitter"),
     type = require("type"),
     each = require("each"),
-    inflect = require("inflect"),
+    Schema = require("./schema"),
 
-    Model = require("./model"),
-    Schema = require("./schema");
+    Model = require("./model");
 
 
-function Collection(options) {
-    if (!(this instanceof Collection)) return new Collection(options);
+function Collection(opts) {
+    var options = {};
 
-    options || (options = {});
+    opts || (opts = {});
 
-    this.adaptors = utils.create(null);
-    this.models = utils.create(null);
-    this.schema = new Schema(this, options.schema);
+    options.schema = opts.schema;
+    options.adaptors = opts.adaptors;
+
+    EventEmitter.call(this);
+
+    this._schema = new Schema(options.schema);
+
+    this._adaptors = {};
+    this._modelHash = {};
+
+    this.models = {};
 
     if (type.isObject(options.adaptors)) {
-        each(options.adaptors, function(adaptor, name) {
-            this.adaptor(name, adaptor);
-        }, this);
+        this.bindAdaptors(options.adaptors);
     }
-
-    return this;
 }
+EventEmitter.extend(Collection);
 
 Collection.prototype.init = function(callback) {
-    var count = utils.keys(this.adaptors).length,
-        errors;
+    var length = 0,
+        done = false;
 
-    function done(err) {
-        if (err) {
-            (errors || (errors = [])).push(err);
+    function createCallback() {
+        length++;
+
+        if (done) {
+            return function() {};
         }
-        if (--count <= 0) {
-            callback(errors);
-        }
+
+        return function adaptorCallback(err) {
+
+            if (err || --length <= 0) {
+                done = true;
+                callback(err);
+            }
+        };
     }
 
-    this.schema.init();
+    this._schema.init();
 
     each(this.models, function(model) {
+
         model.init();
     });
 
-    each(this.adaptors, function(adaptor) {
+    each(this._adaptors, function(adaptor) {
 
-        adaptor.init(done);
-    }, this);
-
-    return this;
-};
-
-Collection.prototype.adaptor = function(name, adaptor) {
-
-    adaptor.collection = this;
-    this.adaptors[name] = adaptor;
+        adaptor.init(createCallback());
+    });
 
     return this;
 };
 
-Collection.prototype.model = function() {
-    var i = 0,
-        length = arguments.length;
+Collection.prototype.adaptor = function(name) {
+    var adaptor = this._adaptors[name];
 
-    for (; i < length; i++) {
-        Collection_model(this, arguments[i]);
+    if (!adaptor) {
+        throw new Error(
+            "Collection.adaptor(name)\n" +
+            "    no adaptor bound to collection found with tableName or className " + name
+        );
+    }
+
+    return adaptor;
+};
+
+Collection.prototype.bindAdaptor = function(name, adaptor) {
+
+    Collection_bindAdaptor(this, name, adaptor);
+    return this;
+};
+
+Collection.prototype.bindAdaptors = function(adaptors) {
+    var _this = this;
+
+    if (!type.isObject(adaptors)) {
+        throw new Error(
+            "Collection.bindAdaptors(adaptors)\n" +
+            "    adaptors must be a Object ex {'memory': new MemoryAdaptor(), 'mysql': new MySQLAdaptor()}"
+        );
+    }
+
+    each(adaptors, function(adaptor, name) {
+
+        Collection_bindAdaptor(_this, name, adaptor);
+    });
+    return this;
+};
+
+function Collection_bindAdaptor(_this, name, adaptor) {
+    var adaptors = _this._adaptors;
+
+    if (!adaptors[name] && !adaptor._collection) {
+        adaptor._collection = _this;
+        adaptors[name] = adaptor;
+    } else {
+        throw new Error(
+            "Collection.bind(adaptor)\n" +
+            "    adaptor " + adaptor._className + " already bound to collection"
+        );
+    }
+}
+
+Collection.prototype.model = function(name) {
+    var model = this._modelHash[name];
+
+    if (!model) {
+        throw new Error(
+            "Collection.model(name)\n" +
+            "    no model bound to collection found with tableName or className " + name
+        );
+    }
+
+    return model;
+};
+
+Collection.prototype.bindModel = function(model) {
+
+    Collection_bindModel(this, model);
+    return this;
+};
+
+Collection.prototype.bindModels = function() {
+    var i = arguments.length,
+        model;
+
+    while (i--) {
+        model = arguments[i];
+
+        if (!(model instanceof Model)) {
+            throw new Error(
+                "Collection.bind(model [, model..])\n" +
+                "    model is not an instance of Model"
+            );
+        }
+
+        Collection_bindModel(this, model);
     }
     return this;
 };
 
-function Collection_model(_this, model) {
+function Collection_bindModel(_this, model) {
     var models = _this.models,
+        modelHash = _this._modelHash,
+
         className = model.className,
         tableName = model.tableName;
 
-    if (models[className]) {
-        throw new Error("Collection model(model) Collection already has model with class name " + className);
+    if (!modelHash[tableName] && !modelHash[className] && !model._collection) {
+        _this._schema.add(model._schema);
+
+        model._collection = _this;
+        models[className] = modelHash[tableName] = modelHash[className] = model;
+    } else {
+        throw new Error(
+            "Collection.bind(model)\n" +
+            "    model " + model._className + " already bound to collection"
+        );
     }
-
-    model.collection = _this;
-    model.schema = _this.schema.createTable(tableName);
-
-    models[className] = model;
 }
 
 

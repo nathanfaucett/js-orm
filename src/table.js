@@ -1,160 +1,200 @@
-var EventEmitter = require("event_emitter"),
+var type = require("type"),
+    each = require("each"),
     utils = require("utils"),
-    type = require("type"),
-    each = require("each");
+
+    functions = require("./functions");
 
 
-var allowedTypes = [
+var types = [
         "string",
-        "text",
-        "int",
         "integer",
         "float",
-        "decimal",
-        "double",
-        "date",
-        "time",
         "datetime",
-        "bool",
         "boolean"
     ],
-    allowedAttributes = [
-        "defaultsTo",
+    allowed = [
         "primaryKey",
         "foreignKey",
         "autoIncrement",
+        "index",
         "unique"
     ];
 
+function coerceType(value) {
+    value = (value + "").toLowerCase();
 
-function Table(schema, tableName) {
+    if (value === "int") {
+        return "integer";
+    } else if (value === "double" || value === "decimal" || value === "dec") {
+        return "float";
+    } else if (value === "bool") {
+        return "boolean";
+    } else if (value === "date" || value === "time") {
+        return "datetime";
+    } else if (value === "text" || value === "str") {
+        value = "string";
+    }
 
-    EventEmitter.call(this);
+    return value;
+}
 
-    this.schema = schema;
+function coerceValue(type, value) {
+    if (type === "string") {
+        return typeof(value.toString) !== "undefined" ? value.toString() : value + "";
+    } else if (type === "integer" || type === "float") {
+        return +value;
+    } else if (type === "boolean") {
+        return !!value;
+    } else if (type === "datetime") {
+        return value instanceof Date ? value.toJSON() : (new Date(value)).toJSON();
+    }
+
+    return value;
+}
+
+
+function Table(tableName, opts) {
+    var options = {};
+
+    opts || (opts = {});
+
+    options.autoId = (opts.autoId != null) ? opts.autoId : true;
+    options.timestamps = (opts.timestamps != null) ? opts.timestamps : true;
+
+    this._options = options;
+    this._keys = null;
+    this._functions = {};
+    this._defines = {};
+
+    this.schema = null;
     this.tableName = tableName;
 
-    this.columns = utils.create(null);
-    this.columns.id = {
-        type: "integer",
-        primaryKey: true,
-        autoIncrement: true
-    };
+    this.columns = {};
 
-    this._keys = null;
-    this._schema = {};
-    this._functions = {};
+    if (opts.columns) this.addColumns(opts.columns);
 }
-EventEmitter.extend(Table);
 
 Table.prototype.init = function() {
     var _this = this,
-        schema = this.schema;
+        options = this._options,
 
-    each(this._functions, function(args, functionName) {
+        schema = this.schema,
+        globalFunctions = functions._functions,
 
-        schema.functions[functionName].method(schema, _this, args[0], args[1]);
+        columns = this.columns;
+
+    if (options.autoId) this.add("autoId", options.autoId);
+    if (options.timestamps) this.add("timestamps", options.timestamps);
+
+    each(this._defines, function(column, columnName) {
+
+        columns[columnName] = utils.copy(column);
     });
-    this._keys = utils.keys(this.columns);
+    each(this._functions, function(opts, functionName) {
+
+        globalFunctions[functionName](schema, _this, opts);
+    });
 
     return this;
 };
 
-Table.prototype.hooks = function(model) {
-    var schema = this.schema;
+Table.prototype.table = function(tableName) {
 
-    each(this._functions, function(_, functionName) {
-        var events = schema.functions[functionName].events;
-
-        if (type.isObject(events)) {
-            each(events, function(event, eventType) {
-                if (type.isArray(event)) {
-                    each(event, function(e) {
-                        model.on(eventType, e);
-                    });
-                } else {
-                    model.on(eventType, event);
-                }
-            });
-        }
-    });
+    return this.schema.table(tableName);
 };
 
 Table.prototype.column = function(columnName) {
-    var columns = this.columns,
-        column = columns[columnName];
+    var column = this.columns[columnName];
 
-    if (!column) {
+    if (column === undefined || column === null) {
         throw new Error(
-            "Table.column(columnName)\n" + ~
-            "    table " + this.tableName + " does not have a column named " + columnName
+            "Table.column(columnName)\n" +
+            "    " + this.tableName + " has no column defined named " + columnName
         );
     }
 
     return column;
 };
 
+Table.prototype.has = function(columnName) {
+
+    return !!this.columns[columnName];
+};
+
+Table.prototype.addColumns = function(columns) {
+    var _this = this;
+
+    each(columns, function(attributes, columnName) {
+
+        _this.add(columnName, attributes);
+    });
+    return this;
+};
+
+Table.prototype.add = function(columnName, attributes) {
+    var defines;
+
+    if (utils.has(functions._functions, columnName)) {
+        Table_parseFunction(this, columnName, attributes);
+    } else {
+        defines = this._defines;
+        Table_parseColumn(this, columnName, attributes, defines[columnName] || (defines[columnName] = {}));
+    }
+
+    return this;
+};
+
+Table.prototype.functionAdd = function(columnName, attributes) {
+    var columns = this.columns,
+        column = columns[columnName] || (columns[columnName] = {});
+
+    Table_parseColumn(this, columnName, attributes, column);
+    return this;
+};
+
 Table.prototype.filter = function(values) {
     var filtered = {},
-        keys = this._keys,
+        columns = this.columns,
+        keys = this._keys || [],
         i = keys.length,
         key, value;
 
     while (i--) {
         key = keys[i];
         value = values[key];
-        if (value !== undefined && value !== null) filtered[key] = value;
+
+        if (value !== undefined && value !== null) {
+            filtered[key] = coerceValue(columns[key].type, value);
+        } else {
+            filtered[key] = null;
+        }
     }
 
     return filtered;
 };
 
-Table.prototype.addColumns = function(columns, options) {
-    var _this = this;
+Table.prototype.coerce = function(values) {
+    var columns = this.columns,
+        keys = this._keys || [],
+        i = keys.length,
+        key, value;
 
-    options || (options = {});
+    while (i--) {
+        key = keys[i];
+        value = values[key];
 
-    each(columns, function(attributes, columnName) {
-
-        _this.addColumn(columnName, attributes, options);
-    });
-    return this;
-};
-
-Table.prototype.addColumn = function(columnName, attributes, options) {
-    options || (options = {});
-
-    if (Table_parseFunction(this, columnName, attributes, options)) {
-        return this;
+        if (value !== undefined && value !== null) {
+            values[key] = coerceValue(columns[key].type, value);
+        }
     }
 
-    if (type.isString(attributes)) {
-        attributes = {
-            type: attributes
-        };
-    }
-
-    this._schema[columnName] = this.columns[columnName] = Table_parseAttributes(this, columnName, attributes, options);
-    return this;
-};
-
-Table.prototype.addFunctionColumn = function(columnName, attributes, options) {
-    options || (options = {});
-
-    if (type.isString(attributes)) {
-        attributes = {
-            type: attributes
-        };
-    }
-
-    this.columns[columnName] = Table_parseAttributes(this, columnName, attributes, options);
-    return this;
+    return values;
 };
 
 Table.prototype.toJSON = function() {
     var json = {};
 
-    each(this._schema, function(column, columnName) {
+    each(this._defines, function(column, columnName) {
         var keys = utils.keys(column),
             i = keys.length,
             jsonColumn, key;
@@ -171,62 +211,54 @@ Table.prototype.toJSON = function() {
             }
         }
     });
-    each(this._functions, function(args, functionName) {
-        json[functionName] = utils.copy(args[0]);
+    each(this._functions, function(options, functionName) {
+
+        json[functionName] = options;
     });
 
     return json;
 };
 
-function Table_parseAttributes(_this, columnName, attributes, options) {
-    var parsedAttributes = utils.create(null);
+function Table_parseFunction(_this, columnName, attributes) {
 
-    each(attributes, function(attribute, attributesName) {
+    _this._functions[columnName] = attributes != null ? attributes : true;
+}
 
-        if (attributesName === "type") {
+function Table_parseColumn(_this, columnName, attributes, column) {
+    if (type.isString(attributes)) {
+        attributes = {
+            type: attributes
+        };
+    }
 
-            parsedAttributes[attributesName] = Table_parseType(_this, columnName, attribute);
+    each(attributes, function(value, key) {
+        var coerced;
 
-        } else if (allowedAttributes.indexOf(attributesName) !== -1) {
+        if (key === "type") {
+            coerced = coerceType(value);
 
-            parsedAttributes[attributesName] = attribute;
+            if (utils.indexOf(types, coerced) === -1) {
+                throw new Error(
+                    "Table parseColumn(columnName, attributes, column)\n" +
+                    "    table " + _this.tableName + " was passed a column named " + columnName + " with a value of " + value + "\n" +
+                    "    interpreted as type which must be on of\n" +
+                    "    " + types.join(", ")
+                );
+            }
+
+            column[key] = coerced;
+        } else {
+            if (utils.indexOf(allowed, key) === -1) {
+                throw new Error(
+                    "Table parseColumn(columnName, attributes, column)\n" +
+                    "    table " + _this.tableName + " column " + columnName + " passed " + value + " allowed attributes are,\n" +
+                    "    type, " + allowed.join(", ")
+                );
+            }
+
+            column[key] = true;
         }
     });
-
-    return parsedAttributes;
-}
-
-function Table_parseType(_this, columnName, value) {
-    if (allowedTypes.indexOf(value) === -1) {
-        throw new Error(
-            "Table parseType(value)\n" +
-            "    table " + _this.tableName + " column " + columnName + " type passed " + value + " must be one of" + allowedTypes.join(", ")
-        );
-    }
-
-    if (value === "int") {
-        return "integer";
-    } else if (value === "double" || value === "decimal") {
-        return "float";
-    } else if (value === "bool") {
-        return "boolean";
-    } else if (value === "date" || value === "time") {
-        return "datetime";
-    } else if (value === "text") {
-        value = "string";
-    }
-
-    return value;
-}
-
-function Table_parseFunction(_this, functionName, attributes, options) {
-
-    if (utils.has(_this.schema.functions, functionName)) {
-        _this._functions[functionName] = [attributes, options];
-        return true;
-    }
-
-    return false;
 }
 
 

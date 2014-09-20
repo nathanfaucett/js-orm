@@ -5,19 +5,20 @@ module.exports = function seed(callback) {
         Cart = collection.models.Cart,
 
         length = 0,
-        errors;
+        done = false;
 
     console.time("seed");
 
-    function done(err) {
+    function createCallback(err) {
         length++;
 
-        return function doneCallback(err) {
-            if (err) {
-                (errors || (errors = [])).push(err);
+        return function doneCallback(errs) {
+            if (done === true) {
+                return;
             }
-            if (--length <= 0) {
-                callback(errors);
+            if (errs || --length <= 0) {
+                done = true;
+                callback(errs);
                 console.timeEnd("seed");
             }
         }
@@ -25,43 +26,64 @@ module.exports = function seed(callback) {
 
     User.create({
         firstName: "Bob",
-        lastName: "Saget",
+        lastName: "Smile",
         age: 64,
-        password: "EtWtQaGOXSS4BwniSeRZU61brobcmijK",
-        email: "bobsaget@gmail.com"
-    }, done());
+        password: "bobsmile",
+        email: "bobsmile@bob.com"
+    }, createCallback());
 
     User.create({
         firstName: "Nathan",
         lastName: "Faucett",
         age: 21,
-        password: "XdG8N1aENnVKr6Gwq3qSx0knlGSfNLeZ",
+        password: "nathanfaucett",
         email: "nathanfaucett@gmail.com"
-    }, done());
+    }, createCallback());
+
+    User.create({
+        firstName: "Sue",
+        lastName: "Frank",
+        age: 36,
+        password: "suefrank",
+        email: "suefrank@yahoo.com"
+    }, createCallback());
 
 
     Cart.create({
         userId: 1,
         title: "Fun cart",
         content: "nothing like this"
-    }, done());
+    }, createCallback());
 
     Cart.create({
         userId: 1,
         title: "Other Fun cart",
         content: "there is something like this"
-    }, done());
+    }, createCallback());
 
 
     Cart.create({
         userId: 2,
         title: "My cart",
         content: "its alright"
-    }, done());
+    }, createCallback());
 
     Cart.create({
         userId: 2,
         title: "This Cart is Great!",
         content: "Maybe?"
-    }, done());
+    }, createCallback());
+
+
+    Cart.create({
+        userId: 3,
+        title: "Cart",
+        content: "big stuff"
+    }, createCallback());
+
+    Cart.create({
+        userId: 3,
+        title: "Cart of Great",
+        content: "has many good times"
+    }, createCallback());
 };
