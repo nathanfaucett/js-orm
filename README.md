@@ -29,7 +29,7 @@ collection.bindModels(
 module.exports = collection;
 ```
 
-difine a Model
+define a Model
 
 ```javascript
 var orm = require("orm");
