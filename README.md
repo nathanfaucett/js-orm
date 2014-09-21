@@ -17,7 +17,7 @@ var collection = orm({
     },
 
     adaptors: {
-        http: new orm.MemoryAdaptor()
+        memory: new orm.MemoryAdaptor()
     }
 });
 

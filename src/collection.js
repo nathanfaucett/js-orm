@@ -1,6 +1,7 @@
 var EventEmitter = require("event_emitter"),
     type = require("type"),
     each = require("each"),
+    utils = require("utils"),
     Schema = require("./schema"),
 
     Model = require("./model");
@@ -13,9 +14,11 @@ function Collection(opts) {
 
     options.schema = opts.schema;
     options.adaptors = opts.adaptors;
+    options.defaultAdaptor = opts.defaultAdaptor || utils.keys(opts.adaptors)[0];
 
     EventEmitter.call(this);
 
+    this._options = options;
     this._schema = new Schema(options.schema);
 
     this._adaptors = {};

@@ -53,6 +53,8 @@ Query.prototype.range = function(key, from, to) {
     return this;
 };
 
+Query.prototype.between = Query.prototype.range;
+
 ["gt", "gte", "lt", "lte", "in", "inq", "ne", "neq", "nin"].forEach(function(method) {
     Query.prototype[method] = function(key, value) {
         var conditions = this._conditions,

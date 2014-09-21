@@ -56,7 +56,7 @@ EventEmitter.extend(Model);
 
 Model.prototype.init = function() {
     var _this = this,
-        adaptor = this.adaptor,
+        adaptor = this.adaptor || this._collection._options.defaultAdaptor,
         schema = this._schema;
 
     each(schema._functions, function(options, name) {
@@ -79,7 +79,7 @@ Model.prototype.init = function() {
     });
     each(schema.columns, function(column, name) {
 
-        _this.validates(name).type(column.type);
+        _this.validates(name)[column.type]();
     });
 
     if (type.isString(adaptor)) {
@@ -400,6 +400,14 @@ Model.prototype.validates = function(columnName) {
     return wrapper;
 };
 
+function ValidationError(column, message) {
+
+    Error.call(this);
+
+    this.column = column;
+    this.message = column + " " + message;
+}
+
 Model.prototype.validate = function(values) {
     var match = validator.match,
         validations = this._validations,
@@ -424,8 +432,7 @@ Model.prototype.validate = function(values) {
             }
 
             if (err) {
-                (errors || (errors = {}));
-                (errors[key] || (errors[key] = [])).push(err);
+                (errors || (errors = [])).push(new ValidationError(key, err));
             }
         }
     }

@@ -5,10 +5,6 @@ global.User = collection.models.User,
 global.Cart = collection.models.Cart;
 
 
-User.adaptor = "memory";
-Cart.adaptor = "memory";
-
-
 global.User_test = function() {
     console.time("User.test");
     User.find(function(err, users) {

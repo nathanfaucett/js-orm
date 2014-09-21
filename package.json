@@ -24,12 +24,13 @@
   "dependencies": {
     "each": "nathanfaucett/each",
     "event_emitter": "nathanfaucett/event_emitter",
+    "file_path": "nathanfaucett/file_path",
+    "file_utils": "nathanfaucett/file_utils",
     "inflect": "nathanfaucett/inflect",
+    "optimist": "^0.6.1",
     "promise": "nathanfaucett/promise",
-    "qs": "git://github.com/nathanfaucett/qs",
-    "request": "git://github.com/nathanfaucett/request",
     "type": "nathanfaucett/type",
     "utils": "nathanfaucett/utils",
-    "validator": "git://github.com/nathanfaucett/validator"
+    "validator": "nathanfaucett/validator"
   }
 }

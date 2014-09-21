@@ -64,7 +64,7 @@ function queryAll(columns, array, query) {
         j = length;
         while (j-- && pass) {
             key = keys[j];
-            pass = compare(item[key], where[key]);
+            pass = compare(columns[key], item[key], where[key]);
         }
 
         if (pass) {
@@ -103,7 +103,7 @@ function queryOne(columns, array, query) {
         j = length;
         while (j-- && pass) {
             key = keys[j];
-            pass = compare(item[key], where[key]);
+            pass = compare(columns[key], item[key], where[key]);
         }
 
         if (pass) {
@@ -114,14 +114,28 @@ function queryOne(columns, array, query) {
     return null;
 }
 
-function compare(value, whereValue) {
-    var key;
+function isUnique(array, key, value) {
+    var i = array.length;
+
+    while (i--) {
+        if (array[i][key] === value) return false;
+    }
+    return true;
+}
+
+function compare(column, value, whereValue) {
+    var columnType = column.type,
+        key;
 
     if (type.isObject(whereValue)) {
         var pass = true;
 
         for (key in whereValue) {
-            pass = conditions[key](value, whereValue[key]);
+            if (columnType === "datetime") {
+                pass = conditions[key](Date.parse(value), Date.parse(whereValue[key]));
+            } else {
+                pass = conditions[key](value, whereValue[key]);
+            }
         }
 
         return pass;
@@ -170,29 +184,38 @@ function MemoryAdaptor() {
 MemoryAdaptor.prototype.init = function(callback) {
     var _this = this,
         tables = this._tables,
-        schema = this._collection._schema;
+        collection = this._collection,
+        schema = collection && collection._schema;
 
     process.nextTick(function() {
 
-        each(schema.tables, function(tableSchema, tableName) {
-            var counters = {};
+        if (schema) {
+            each(schema.tables, function(tableSchema, tableName) {
+                var counters = {},
+                    uniques = {};
 
-            each(tableSchema.columns, function(column, columnName) {
-                each(column, function(value, key) {
-                    if (key === "autoIncrement") {
-                        counters[columnName] = 1;
-                    }
+                each(tableSchema.columns, function(column, columnName) {
+                    each(column, function(value, key) {
+                        if (key === "autoIncrement") {
+                            counters[columnName] = 1;
+                        } else if (key === "unique") {
+                            uniques[columnName] = true;
+                        }
+                    });
                 });
+
+                tables[tableName] = {
+                    counters: counters,
+                    uniques: uniques,
+                    schema: tableSchema,
+                    rows: []
+                };
             });
 
-            tables[tableName] = {
-                counters: counters,
-                schema: tableSchema,
-                rows: []
-            };
-        });
-
-        callback();
+            callback();
+        } else {
+            callback();
+        }
     });
     return this;
 };
@@ -202,7 +225,24 @@ MemoryAdaptor.prototype.save = function(tableName, params, callback) {
         columns = table.schema.columns;
 
     process.nextTick(function() {
-        var row = {};
+        var rows = table.rows,
+            row = {},
+            err;
+
+        each(table.uniques, function(_, key, uniques) {
+            if (isUnique(rows, key, params[key]) === false) {
+                err = new Error(
+                    "MemoryAdaptor save(tableName, params, callback) table " + tableName + " already has a row where " + key + " = " + params[key]
+                );
+                return false;
+            }
+            return true;
+        });
+
+        if (err) {
+            callback(err);
+            return;
+        }
 
         each(table.counters, function(counter, key, counters) {
             params[key] = counters[key]++;
@@ -223,7 +263,7 @@ MemoryAdaptor.prototype.save = function(tableName, params, callback) {
             }
         });
 
-        table.rows.push(row);
+        rows.push(row);
         callback(undefined, row);
     });
     return this;
@@ -234,14 +274,31 @@ MemoryAdaptor.prototype.update = function(tableName, params, callback) {
         columns = table.schema.columns;
 
     process.nextTick(function() {
-        var row = queryOne(table.rows, {
-            where: {
-                id: params.id
-            }
-        });
+        var rows = table.rows,
+            row = queryOne(columns, rows, {
+                where: {
+                    id: params.id
+                }
+            }),
+            err;
 
         if (!row) {
             callback(new Error("MemoryAdaptor update(tableName, params, callback) no row found where id=" + params.id));
+            return;
+        }
+
+        each(table.uniques, function(_, key, uniques) {
+            if (isUnique(rows, key, params[key]) === false) {
+                err = new Error(
+                    "MemoryAdaptor update(tableName, params, callback) table " + tableName + " already has a row where " + key + " = " + params[key]
+                );
+                return false;
+            }
+            return true;
+        });
+
+        if (err) {
+            callback(err);
             return;
         }
 
@@ -277,7 +334,7 @@ MemoryAdaptor.prototype.findOne = function(tableName, query, callback) {
     var table = this._tables[tableName];
 
     process.nextTick(function() {
-        var row = queryOne(table.schema[tableName].columns, table.rows, query);
+        var row = queryOne(table.schema.columns, table.rows, query);
 
         callback(undefined, utils.copy(row));
     });
@@ -289,7 +346,7 @@ MemoryAdaptor.prototype.destroy = function(tableName, params, callback) {
 
     process.nextTick(function() {
         var rows = table.rows,
-            row = queryOne(rows, {
+            row = queryOne(table.schema.columns, rows, {
                 where: {
                     id: params.id
                 }
@@ -320,6 +377,54 @@ MemoryAdaptor.prototype.destroyWhere = function(tableName, query, callback) {
 
         callback(undefined, each(result, utils.copy));
     });
+    return this;
+};
+
+MemoryAdaptor.prototype.createTable = function(tableName, columns, callback) {
+
+    process.nextTick(callback);
+    return this;
+};
+
+MemoryAdaptor.prototype.renameTable = function(tableName, newTableName, callback) {
+
+    process.nextTick(callback);
+    return this;
+};
+
+MemoryAdaptor.prototype.removeTable = function(tableName, callback) {
+
+    process.nextTick(callback);
+    return this;
+};
+
+MemoryAdaptor.prototype.addColumn = function(tableName, columnName, column, callback) {
+
+    process.nextTick(callback);
+    return this;
+};
+
+MemoryAdaptor.prototype.renameColumn = function(tableName, columnName, newColumnName, callback) {
+
+    process.nextTick(callback);
+    return this;
+};
+
+MemoryAdaptor.prototype.removeColumn = function(tableName, columnName, callback) {
+
+    process.nextTick(callback);
+    return this;
+};
+
+MemoryAdaptor.prototype.addIndex = function(tableName, columnName, callback) {
+
+    process.nextTick(callback);
+    return this;
+};
+
+MemoryAdaptor.prototype.removeIndex = function(tableName, columnName, callback) {
+
+    process.nextTick(callback);
     return this;
 };
 

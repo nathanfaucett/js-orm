@@ -12,41 +12,71 @@ function Task(name, order, args) {
     this._time = 0;
 }
 
-Task.prototype.toString = function() {
+Task.prototype.print = function() {
     return (
-        "=================================================\n" +
-        "-- " + this.name + "(" + this.args + ")\n" +
-        "   -> " + this._time + "s\n" +
-        "=================================================\n"
+        "\n=================================================\n" +
+        "-- " + this.name + "(" + prettyArgs(this.args) + ");\n" +
+        "   -> " + this._time + "(ms)\n" +
+        "================================================="
     );
 };
 
+function prettyArgs(args) {
+    var length = args.length - 1,
+        i = -1,
+        value, typeStr;
 
-function Migrate(adaptor) {
+    args = args.slice(0, length);
 
-    this._adaptor = adaptor;
+    while (++i < length) {
+        value = args[i];
+        typeStr = typeof(value);
+
+        if (typeStr === "string") {
+            args[i] = '"' + value + '"';
+        } else if (typeStr === "number") {
+            args[i] = value;
+        } else {
+            value = JSON.stringify(value);
+
+            if (value.length > 80) {
+                value = value.slice(0, 50) + "...";
+            }
+
+            args[i] = value;
+        }
+    }
+    return args.join(", ");
+}
+
+
+function Migrate() {
+
     this._tasks = [];
 }
 
 function Migrate_createTask(_this, name, order, args) {
 
-    _this.push(new Task(name, order, args));
+    _this._tasks.push(new Task(name, order, args));
 }
 
 each(
     [
-        "createTable", // tableName, columns, options
+        "createTable", // tableName, columns
         "renameTable", // tableName, newTableName
         "removeTable", // tableName
 
-        "addColumn", // tableName, columnName, column, options
+        "addColumn", // tableName, columnName, column
         "renameColumn", // tableName, columnName, newColumnName
-        "removeColumn" // tableName, columnName
+        "removeColumn", // tableName, columnName
+
+        "addIndex", // tableName, columnName
+        "removeIndex" // tableName, columnName
     ],
     function(taskName, order) {
         Migrate.prototype[taskName] = function() {
 
-            Migrate_createTask(_this, taskName, order, slice.call(arguments));
+            Migrate_createTask(this, taskName, order, slice.call(arguments));
             return this;
         };
     }
