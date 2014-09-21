@@ -380,7 +380,7 @@ MemoryAdaptor.prototype.destroyWhere = function(tableName, query, callback) {
     return this;
 };
 
-MemoryAdaptor.prototype.createTable = function(tableName, columns, callback) {
+MemoryAdaptor.prototype.createTable = function(tableName, columns, options, callback) {
 
     process.nextTick(callback);
     return this;
@@ -398,7 +398,7 @@ MemoryAdaptor.prototype.removeTable = function(tableName, callback) {
     return this;
 };
 
-MemoryAdaptor.prototype.addColumn = function(tableName, columnName, column, callback) {
+MemoryAdaptor.prototype.addColumn = function(tableName, columnName, column, options, callback) {
 
     process.nextTick(callback);
     return this;
@@ -416,13 +416,13 @@ MemoryAdaptor.prototype.removeColumn = function(tableName, columnName, callback)
     return this;
 };
 
-MemoryAdaptor.prototype.addIndex = function(tableName, columnName, callback) {
+MemoryAdaptor.prototype.addIndex = function(tableName, columnName, options, callback) {
 
     process.nextTick(callback);
     return this;
 };
 
-MemoryAdaptor.prototype.removeIndex = function(tableName, columnName, callback) {
+MemoryAdaptor.prototype.removeIndex = function(tableName, columnName, options, callback) {
 
     process.nextTick(callback);
     return this;
