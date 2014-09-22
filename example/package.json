@@ -1,0 +1,8 @@
+{
+  "name": "example",
+  "version": "0.0.1",
+  "description": "example",
+  "dependencies": {
+    "sqlite3_adaptor": "nathanfaucett/sqlite3_adaptor"
+  }
+}

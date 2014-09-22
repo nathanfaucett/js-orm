@@ -4,6 +4,17 @@ global.collection = require("./collection");
 global.User = collection.models.User,
 global.Cart = collection.models.Cart;
 
+if (!process.browser) {
+    var SQLite3Adaptor = require("sqlite3_adaptor"),
+        adaptor = new SQLite3Adaptor({
+            file: "./sqlite3_database"
+        });
+
+    collection.bindAdaptor("sqlite3", adaptor);
+
+    User.adaptor = "sqlite3";
+    Cart.adaptor = "sqlite3";
+}
 
 global.User_test = function() {
     console.time("User.test");
@@ -46,9 +57,9 @@ collection.init(function(err) {
         return;
     }
 
-    require("./seed")(function(errs) {
-        if (errs) {
-            console.log(errs);
+    require("./seed")(function(err) {
+        if (err) {
+            console.log(err);
             return;
         }
 

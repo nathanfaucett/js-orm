@@ -12,13 +12,13 @@ module.exports = function seed(callback) {
     function createCallback(err) {
         length++;
 
-        return function doneCallback(errs) {
+        return function doneCallback(err) {
             if (done === true) {
                 return;
             }
-            if (errs || --length <= 0) {
+            if (err || --length <= 0) {
                 done = true;
-                callback(errs);
+                callback(err);
                 console.timeEnd("seed");
             }
         }
