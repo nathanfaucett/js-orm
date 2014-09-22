@@ -8,6 +8,6 @@ module.exports = {
 
     //adaptor: new orm.MemoryAdaptor()
     adaptor: new SQLite3Adaptor({
-        file: __dirname + "/sqlite3_database"
+        file: __dirname + "/sqlite.db"
     })
 };

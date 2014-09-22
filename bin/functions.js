@@ -87,7 +87,7 @@ functions.belongsTo = function(migrate, tableName, columns, options) {
         model: options + ""
     };
 
-    modelName = inflect.pluralize(options.model, options.locale);
+    modelName = inflect.singularize(options.model, options.locale);
 
     columnName = inflect.foreignKey(
         modelName,

@@ -428,5 +428,11 @@ MemoryAdaptor.prototype.removeIndex = function(tableName, columnName, options, c
     return this;
 };
 
+MemoryAdaptor.prototype.removeDatabase = function(callback) {
+
+    process.nextTick(callback);
+    return this;
+};
+
 
 module.exports = MemoryAdaptor;

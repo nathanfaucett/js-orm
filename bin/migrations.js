@@ -49,6 +49,35 @@ migrations.down = function(options, callback) {
     run(options, callback);
 };
 
+migrations.drop = function(options, callback) {
+    var adaptor = options.adaptor,
+        verbose = options.verbose !== false;
+
+    adaptor.init(function(err) {
+        var task;
+
+        if (err) {
+            callback(err);
+            return;
+        }
+
+        migrate = new Migrate(options);
+        migrate.dropDatabase();
+
+        task = migrate._tasks[0];
+        task.args.push(function(err) {
+            task._time = now() - task._time;
+            if (verbose) {
+                console.log(task.print());
+            }
+            callback(err);
+        });
+        task._time = now();
+
+        adaptor[task.name].apply(adaptor, task.args);
+    });
+};
+
 function load(options, callback) {
     var migrations = [];
 
@@ -90,22 +119,22 @@ function run(options, callback) {
         }
 
         adaptor.init(function(err) {
+            var tasks = [],
+                index = 0,
+                length;
+
             if (err) {
                 callback(err);
                 return;
             }
 
             each(migrations, function(migration) {
-                var index = 0,
-                    tasks, length;
+                var migrate = new Migrate(options),
+                    migrateTasks = migrate._tasks;
 
-                migrate = new Migrate(options);
                 migration.exports[migrationType](migrate);
 
-                tasks = migrate._tasks;
-                tasks.sort(sortTasks);
-
-                each(tasks, function(task) {
+                each(migrateTasks, function(task) {
                     task.args.push(function(err) {
                         task._time = now() - task._time;
                         if (verbose) {
@@ -115,33 +144,36 @@ function run(options, callback) {
                     });
                 });
 
-                length = tasks.length;
+                tasks.push.apply(tasks, migrateTasks);
+            });
 
-                function next(err) {
-                    var task;
+            tasks.sort(sortTasks);
+            length = tasks.length;
 
-                    if (err || index >= length) {
-                        callback(err);
-                        return;
-                    }
+            function next(err) {
+                var task;
 
-                    task = tasks[index++];
-
-                    if (!type.isFunction(adaptor[task.name])) {
-                        callback(new Error("adaptor does not have method " + task.name));
-                        return;
-                    }
-
-                    try {
-                        task._time = now();
-                        adaptor[task.name].apply(adaptor, task.args);
-                    } catch (e) {
-                        callback(e);
-                    }
+                if (err || index >= length) {
+                    callback(err);
+                    return;
                 }
 
-                next();
-            });
+                task = tasks[index++];
+
+                if (!type.isFunction(adaptor[task.name])) {
+                    next(new Error("adaptor does not have method " + task.name));
+                    return;
+                }
+
+                try {
+                    task._time = now();
+                    adaptor[task.name].apply(adaptor, task.args);
+                } catch (e) {
+                    next(e);
+                }
+            };
+
+            next();
         });
     });
 }

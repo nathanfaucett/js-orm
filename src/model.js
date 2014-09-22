@@ -98,7 +98,7 @@ Model.prototype.init = function() {
 
 Model.prototype.build = function(attributes) {
     var instance = new this.Class(),
-        schema, columns, keys, key, attribute, i;
+        schema, columns, columnType, keys, key, attribute, i;
 
     if (type.isObject(attributes)) {
         schema = this._schema;
@@ -109,9 +109,14 @@ Model.prototype.build = function(attributes) {
         while (i--) {
             key = keys[i];
             attribute = attributes[key];
+            columnType = columns[key].type;
 
             if (attribute !== undefined && attribute !== null) {
-                instance[key] = attribute;
+                if (columnType === "datetime") {
+                    instance[key] = (new Date(attribute)).toJSON();
+                } else {
+                    instance[key] = attribute;
+                }
             }
         }
     }

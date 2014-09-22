@@ -167,5 +167,13 @@ Migrate.prototype.removeIndex = function(tableName, columnName, options) {
     return this;
 };
 
+Migrate.prototype.removeDatabase = function() {
+
+    Migrate_createTask(this, "removeDatabase", 8);
+    return this;
+};
+
+Migrate.prototype.dropDatabase = Migrate.prototype.removeDatabase;
+
 
 module.exports = Migrate;
