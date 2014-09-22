@@ -60,6 +60,7 @@ function Table(tableName, opts) {
 
     options.autoId = (opts.autoId != null) ? opts.autoId : true;
     options.timestamps = (opts.timestamps != null) ? opts.timestamps : true;
+    options.functions = utils.extend(opts.functions || {}, functions);
 
     this._options = options;
     this._keys = null;
@@ -74,12 +75,16 @@ function Table(tableName, opts) {
     if (opts.columns) this.addColumns(opts.columns);
 }
 
+Table.coerceType = coerceType;
+Table.coerceValue = coerceValue;
+Table.types = types;
+Table.allowed = allowed;
+
 Table.prototype.init = function() {
     var _this = this,
         options = this._options,
 
         schema = this.schema,
-        globalFunctions = functions._functions,
 
         columns = this.columns;
 
@@ -92,7 +97,7 @@ Table.prototype.init = function() {
     });
     each(this._functions, function(opts, functionName) {
 
-        globalFunctions[functionName](schema, _this, opts);
+        options.functions[functionName](schema, _this, opts);
     });
 
     return this;
@@ -134,7 +139,7 @@ Table.prototype.addColumns = function(columns) {
 Table.prototype.add = function(columnName, attributes) {
     var defines;
 
-    if (utils.has(functions._functions, columnName)) {
+    if (utils.has(this._options.functions, columnName)) {
         Table_parseFunction(this, columnName, attributes);
     } else {
         defines = this._defines;

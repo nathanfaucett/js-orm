@@ -5,7 +5,7 @@ var type = require("type"),
 var functions = module.exports;
 
 
-functions.autoId = function(schema, table, options) {
+functions.autoId = function(migrate, tableName, columns, options) {
     var value = {};
 
     options = type.isObject(options) ? options : {};
@@ -14,12 +14,15 @@ functions.autoId = function(schema, table, options) {
     if (options.primaryKey !== false) value.primaryKey = true;
     if (options.autoIncrement !== false) value.autoIncrement = true;
 
-    table.functionAdd(options.key || "id", value);
+    columns.id = value;
 };
 
-functions.timestamps = function(schema, table, options) {
+functions.timestamps = function(migrate, tableName, columns, options) {
     var createdAt = "createdAt",
-        updatedAt = "updatedAt";
+        updatedAt = "updatedAt",
+        value = {
+            type: "datetime"
+        };
 
     if (type.isObject(options)) {
         if (options.underscore === true || options.camelcase === false) {
@@ -28,40 +31,40 @@ functions.timestamps = function(schema, table, options) {
         }
     }
 
-    table.functionAdd(createdAt, "datetime");
-    table.functionAdd(updatedAt, "datetime");
+    columns[createdAt] = value;
+    columns[updatedAt] = value;
 };
 
-functions.hasMany = function(schema, table, options) {
-    var model, columnName;
+functions.hasMany = function(migrate, tableName, columns, options) {
+    var modelName, columnName;
 
     options = type.isObject(options) ? options : {
         collection: options + ""
     };
 
-    model = schema.table(options.collection);
+    modelName = options.collection;
 
     columnName = inflect.foreignKey(
-        inflect.singularize(table.tableName, options.locale),
+        inflect.singularize(tableName, options.locale),
         options.key || "id",
         options.underscore === false || options.camelcase === true || true,
         options.lowFirstLetter != null ? !!options.lowFirstLetter : true
     );
 
-    model.functionAdd(columnName, {
+    migrate.addColumn(modelName, columnName, {
         type: options.type || "integer",
         foreignKey: true
     });
 };
 
-functions.hasOne = function(schema, table, options) {
-    var model, columnName;
+functions.hasOne = function(migrate, tableName, columns, options) {
+    var modelName, columnName;
 
     options = type.isObject(options) ? options : {
         model: options + ""
     };
 
-    model = schema.table(inflect.pluralize(options.model, options.locale));
+    modelName = inflect.pluralize(options.model, options.locale);
 
     columnName = inflect.foreignKey(
         inflect.singularize(table.tableName, options.locale),
@@ -70,30 +73,30 @@ functions.hasOne = function(schema, table, options) {
         options.lowFirstLetter != null ? !!options.lowFirstLetter : true
     );
 
-    model.functionAdd(columnName, {
+    migrate.addColumn(modelName, columnName, {
         type: options.type || "integer",
         unique: true,
         foreignKey: true
     });
 };
 
-functions.belongsTo = function(schema, table, options) {
-    var model, columnName;
+functions.belongsTo = function(migrate, tableName, columns, options) {
+    var modelName, columnName;
 
     options = type.isObject(options) ? options : {
         model: options + ""
     };
 
-    model = schema.table(inflect.pluralize(options.model, options.locale));
+    modelName = inflect.pluralize(options.model, options.locale);
 
     columnName = inflect.foreignKey(
-        options.model,
+        modelName,
         options.key || "id",
         options.underscore === false || options.camelcase === true || true,
         options.lowFirstLetter != null ? !!options.lowFirstLetter : true
     );
 
-    table.functionAdd(columnName, {
+    migrate.addColumn(tableName, columnName, {
         type: options.type || "integer",
         foreignKey: true
     });

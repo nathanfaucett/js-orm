@@ -416,7 +416,7 @@ MemoryAdaptor.prototype.removeColumn = function(tableName, columnName, callback)
     return this;
 };
 
-MemoryAdaptor.prototype.addIndex = function(tableName, columnName, options, callback) {
+MemoryAdaptor.prototype.createIndex = function(tableName, columnName, options, callback) {
 
     process.nextTick(callback);
     return this;

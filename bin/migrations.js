@@ -41,10 +41,10 @@ migrations.up = function(options, callback) {
     run(options, callback);
 };
 
-migrations.down = function(migrationsFolder, callback) {
+migrations.down = function(options, callback) {
     options || (options = {});
 
-    options.type = "up";
+    options.type = "down";
 
     run(options, callback);
 };
@@ -89,54 +89,61 @@ function run(options, callback) {
             return;
         }
 
-        each(migrations, function(migration) {
-            var index = 0,
-                tasks, length;
-
-            migrate = new Migrate();
-            migration.exports[migrationType](migrate);
-
-            tasks = migrate._tasks;
-            tasks.sort(sortTasks);
-
-            each(tasks, function(task) {
-                task.args.push(function(err) {
-                    task._time = now() - task._time;
-                    if (verbose) {
-                        console.log(task.print());
-                    }
-                    next(err);
-                });
-            });
-
-            length = tasks.length;
-
-            function next(err) {
-                var task;
-
-                if (err || index >= length) {
-                    callback(err);
-                    return;
-                }
-
-                task = tasks[index++];
-
-                if (!type.isFunction(adaptor[task.name])) {
-                    callback(new Error("adaptor does not have method " + task.name));
-                    return;
-                }
-
-                try {
-                    task._time = now();
-                    adaptor[task.name].apply(adaptor, task.args);
-                } catch (e) {
-                    callback(e);
-                }
+        adaptor.init(function(err) {
+            if (err) {
+                callback(err);
+                return;
             }
 
-            next();
-        })
-    })
+            each(migrations, function(migration) {
+                var index = 0,
+                    tasks, length;
+
+                migrate = new Migrate(options);
+                migration.exports[migrationType](migrate);
+
+                tasks = migrate._tasks;
+                tasks.sort(sortTasks);
+
+                each(tasks, function(task) {
+                    task.args.push(function(err) {
+                        task._time = now() - task._time;
+                        if (verbose) {
+                            console.log(task.print());
+                        }
+                        next(err);
+                    });
+                });
+
+                length = tasks.length;
+
+                function next(err) {
+                    var task;
+
+                    if (err || index >= length) {
+                        callback(err);
+                        return;
+                    }
+
+                    task = tasks[index++];
+
+                    if (!type.isFunction(adaptor[task.name])) {
+                        callback(new Error("adaptor does not have method " + task.name));
+                        return;
+                    }
+
+                    try {
+                        task._time = now();
+                        adaptor[task.name].apply(adaptor, task.args);
+                    } catch (e) {
+                        callback(e);
+                    }
+                }
+
+                next();
+            });
+        });
+    });
 }
 
 

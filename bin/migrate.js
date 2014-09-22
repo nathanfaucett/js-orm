@@ -1,3 +1,11 @@
+var each = require("each"),
+    type = require("type"),
+    utils = require("utils"),
+
+    functions = require("./functions"),
+    Table = require("../src/table");
+
+
 var slice = Array.prototype.slice;
 
 
@@ -34,7 +42,7 @@ function prettyArgs(args) {
         } else if (typeStr === "number") {
             args[i] = value;
         } else {
-            value = JSON.stringify(value);
+            value = JSON.stringify(value) || "null";
 
             if (value.length > 80) {
                 value = value.slice(0, 50) + "...";
@@ -46,9 +54,59 @@ function prettyArgs(args) {
     return args.join(", ");
 }
 
+function filterColumns(_this, tableName, columns, options) {
+    var out = {};
 
-function Migrate() {
+    if (_this._options.autoId && !columns.autoId) columns.autoId = _this._options.autoId;
+    if (_this._options.timestamps && !columns.timestamps) columns.timestamps = _this._options.timestamps;
 
+    each(columns, function(attributes, columnName) {
+
+        if (utils.has(functions, columnName)) {
+            functions[columnName](_this, tableName, out, attributes);
+            return;
+        }
+
+        out[columnName] = filterAttributes(_this, tableName, columnName, attributes, options);
+    });
+
+    return out;
+}
+
+function filterAttributes(_this, tableName, columnName, attributes, options) {
+    var out = {},
+        coerced;
+
+    if (type.isString(attributes)) {
+        attributes = {
+            type: attributes
+        };
+    }
+
+    each(attributes, function(value, key) {
+        if (key === "type") {
+            coerced = Table.coerceType(value);
+            if (utils.indexOf(Table.types, coerced) === -1) return;
+            out[key] = coerced;
+        } else {
+            if (utils.indexOf(Table.allowed, key) === -1) return;
+            out[key] = true;
+        }
+    });
+
+    return out;
+}
+
+
+function Migrate(opts) {
+    var options = {};
+
+    opts || (opts = {});
+
+    options.autoId = (opts.autoId != null) ? opts.autoId : true;
+    options.timestamps = (opts.timestamps != null) ? opts.timestamps : true;
+
+    this._options = options;
     this._tasks = [];
 }
 
@@ -58,8 +116,9 @@ function Migrate_createTask(_this, name, order) {
 }
 
 Migrate.prototype.createTable = function(tableName, columns, options) {
+    var filtered = filterColumns(this, tableName, columns, options);
 
-    Migrate_createTask(this, "createTable", 0, tableName, columns, options || {});
+    Migrate_createTask(this, "createTable", 0, tableName, filtered, options || {});
     return this;
 };
 
@@ -78,8 +137,9 @@ Migrate.prototype.removeTable = function(tableName) {
 Migrate.prototype.dropTable = Migrate.prototype.removeTable;
 
 Migrate.prototype.addColumn = function(tableName, columnName, column, options) {
+    var filtered = filterAttributes(this, tableName, columnName, column, options);
 
-    Migrate_createTask(this, "addColumn", 3, tableName, columnName, column, options);
+    Migrate_createTask(this, "addColumn", 3, tableName, columnName, filtered, options);
     return this;
 };
 
@@ -95,9 +155,9 @@ Migrate.prototype.removeColumn = function(tableName, columnName) {
     return this;
 };
 
-Migrate.prototype.addIndex = function(tableName, columnName, options) {
+Migrate.prototype.createIndex = function(tableName, columnName, options) {
 
-    Migrate_createTask(this, "addIndex", 6, tableName, columnName, options || {});
+    Migrate_createTask(this, "createIndex", 6, tableName, columnName, options || {});
     return this;
 };
 

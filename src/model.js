@@ -26,6 +26,7 @@ function Model(opts) {
     }
 
     options.columns = opts.columns || opts.schema;
+    options.functions = opts.functions;
 
     options.className = opts.name || opts.className;
     options.tableName = type.isString(opts.tableName) ? opts.tableName : inflect.tableize(options.className);

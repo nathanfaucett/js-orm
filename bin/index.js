@@ -12,14 +12,15 @@ var filePath = require("file_path"),
     .demand("c").alias("c", "config").describe("c", "config file")
     .alias("a", "after").describe("a", "only run migrations after passed date")
     .alias("b", "before").describe("b", "only run migrations before passed date")
-    .alias("t", "type").describe("t", "type of migrations defaults to \"up\"")
+    .describe("up", "migrate up")
+    .describe("down", "migrate down")
     .alias("v", "verbose").describe("v", "verbose mode, defaults to true")
     .argv;
 
 
 utils.extend(options, require(filePath.resolve(process.cwd(), argv["config"])));
 
-options.type = argv["type"] === "down" ? "down" : "up";
+options.type = !!argv["down"] ? "down" : "up";
 options.after = argv["after"] != null ? Date.parse(argv["after"]) : null;
 options.before = argv["before"] != null ? Date.parse(argv["before"]) : null;
 options.verbose = argv["verbose"] != null ? !!argv["verbose"] : true;

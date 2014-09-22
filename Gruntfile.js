@@ -4,7 +4,8 @@ module.exports = function(grunt) {
         jsbeautifier: {
             files: [
                 "**/*.js",
-                "!node_modules/**/*"
+                "!node_modules/**/*",
+                "!example/node_modules/**/*"
             ]
         }
     });
