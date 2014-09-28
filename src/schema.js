@@ -88,7 +88,7 @@ Schema.prototype.add = function(table) {
         );
     }
 
-    tableName = table.tableName
+    tableName = table.tableName;
 
     if (tables[tableName]) {
         throw new Error(
@@ -131,7 +131,7 @@ Schema.prototype.fromJSON = function(json) {
         _this.create(tableName, opts).addColumns(columns);
     });
 
-    return this
+    return this;
 };
 
 Schema.prototype.toExports = function(numOfSpacesPerTab) {

@@ -66,7 +66,7 @@ Model.prototype.init = function() {
 
         if (!type.isFunction(hookFunc)) return;
 
-        hook = hookFunc(type.isObject(options) ? options : {})
+        hook = hookFunc(type.isObject(options) ? options : {});
 
         each(hook.events, function(event, eventType) {
             if (type.isArray(event)) {
@@ -90,6 +90,7 @@ Model.prototype.init = function() {
     }
 
     this.generateClass();
+    this._wrappers = {};
 
     this.emit("init");
 
@@ -397,7 +398,7 @@ Model.prototype.validates = function(columnName) {
 
         each(validator.rules, function(rule, ruleName) {
             wrapper[ruleName] = function() {
-                validation[ruleName] = arguments.length > 0 ? slice.call(arguments) : true;
+                validation[inflect.underscore(ruleName)] = arguments.length > 0 ? slice.call(arguments) : true;
                 return wrapper;
             };
         });
@@ -406,12 +407,13 @@ Model.prototype.validates = function(columnName) {
     return wrapper;
 };
 
-function ValidationError(column, message) {
+function ValidationError(tableName, columnName, value, rule, args) {
 
-    Error.call(this);
-
-    this.column = column;
-    this.message = column + " " + message;
+    this.tableName = tableName;
+    this.columnName = columnName;
+    this.value = value;
+    this.rule = rule;
+    this.args = args;
 }
 
 Model.prototype.validate = function(values) {
@@ -438,7 +440,7 @@ Model.prototype.validate = function(values) {
             }
 
             if (err) {
-                (errors || (errors = [])).push(new ValidationError(key, err));
+                (errors || (errors = [])).push(new ValidationError(this.tableName, key, value, rule, args));
             }
         }
     }

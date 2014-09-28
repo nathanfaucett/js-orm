@@ -21,7 +21,7 @@ module.exports = function seed(callback) {
                 callback(err);
                 console.timeEnd("seed");
             }
-        }
+        };
     }
 
     User.create({

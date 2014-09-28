@@ -19,12 +19,12 @@ var filePath = require("file_path"),
     .argv;
 
 
-utils.extend(options, require(filePath.resolve(process.cwd(), argv["config"])));
+utils.extend(options, require(filePath.resolve(process.cwd(), argv.config)));
 
-options.type = !!argv["drop"] ? "drop" : (!!argv["down"] ? "down" : "up");
-options.after = argv["after"] != null ? Date.parse(argv["after"]) : null;
-options.before = argv["before"] != null ? Date.parse(argv["before"]) : null;
-options.verbose = argv["verbose"] != null ? !!argv["verbose"] : true;
+options.type = !!argv.drop ? "drop" : (!!argv.down ? "down" : "up");
+options.after = argv.after != null ? Date.parse(argv.after) : null;
+options.before = argv.before != null ? Date.parse(argv.before) : null;
+options.verbose = argv.verbose != null ? !!argv.verbose : true;
 
 
 start = migrations.now();

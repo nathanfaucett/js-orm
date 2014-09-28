@@ -41,6 +41,15 @@ global.Cart_test = function() {
     });
 };
 
+global.seed = function() {
+    console.time("seed");
+    require("./seed")(function(err) {
+        console.timeEnd("seed");
+        if (err) {
+            console.log(err);
+        }
+    });
+};
 
 var UID_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -49,7 +58,7 @@ function uid(length) {
     length || (length = 24);
     while (length--) str += UID_CHARS[(Math.random() * 62) | 0];
     return str;
-};
+}
 
 
 User.on("init", function() {

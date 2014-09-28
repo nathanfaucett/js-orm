@@ -171,7 +171,7 @@ function run(options, callback) {
                 } catch (e) {
                     next(e);
                 }
-            };
+            }
 
             next();
         });

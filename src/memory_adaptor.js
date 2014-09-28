@@ -59,7 +59,7 @@ function queryAll(columns, array, query) {
 
     while (++i < il) {
         item = array[i];
-        pass = true
+        pass = true;
 
         j = length;
         while (j-- && pass) {
@@ -98,7 +98,7 @@ function queryOne(columns, array, query) {
 
     while (++i < il) {
         item = array[i];
-        pass = true
+        pass = true;
 
         j = length;
         while (j-- && pass) {
