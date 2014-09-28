@@ -9,7 +9,7 @@ module.exports = function seed(callback) {
 
     console.time("seed");
 
-    function createCallback(err) {
+    function createCallback() {
         length++;
 
         return function doneCallback(err) {

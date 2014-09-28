@@ -182,8 +182,7 @@ function MemoryAdaptor() {
 }
 
 MemoryAdaptor.prototype.init = function(callback) {
-    var _this = this,
-        tables = this._tables,
+    var tables = this._tables,
         collection = this._collection,
         schema = collection && collection._schema;
 
@@ -229,7 +228,7 @@ MemoryAdaptor.prototype.save = function(tableName, params, callback) {
             row = {},
             err;
 
-        each(table.uniques, function(_, key, uniques) {
+        each(table.uniques, function(_, key) {
             if (isUnique(rows, key, params[key]) === false) {
                 err = new Error(
                     "MemoryAdaptor save(tableName, params, callback) table " + tableName + " already has a row where " + key + " = " + params[key]
@@ -287,7 +286,7 @@ MemoryAdaptor.prototype.update = function(tableName, params, callback) {
             return;
         }
 
-        each(table.uniques, function(_, key, uniques) {
+        each(table.uniques, function(_, key) {
             if (isUnique(rows, key, params[key]) === false) {
                 err = new Error(
                     "MemoryAdaptor update(tableName, params, callback) table " + tableName + " already has a row where " + key + " = " + params[key]

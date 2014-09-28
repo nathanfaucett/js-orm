@@ -421,7 +421,7 @@ Model.prototype.validate = function(values) {
         validations = this._validations,
         keys = this._schema._keys,
         i = keys.length,
-        key, validation, value, rule, args, err, error, errors;
+        key, validation, value, rule, args, error, errors;
 
     while (i--) {
         key = keys[i];
@@ -434,12 +434,12 @@ Model.prototype.validate = function(values) {
             args = validation[rule];
 
             if (typeof(args) === "boolean") {
-                err = match(rule, value);
+                error = match(rule, value);
             } else {
-                err = match(rule, value, args);
+                error = match(rule, value, args);
             }
 
-            if (err) {
+            if (error) {
                 (errors || (errors = [])).push(new ValidationError(this.tableName, key, value, rule, args));
             }
         }
@@ -449,19 +449,39 @@ Model.prototype.validate = function(values) {
 };
 
 Model.prototype.generateClass = function() {
-    var model = this;
+    var model = this,
+        Class;
 
     try {
         eval([
             "function " + this.className + "() {",
             Model_generateClassAttributes(this),
             "}",
-            Model_generateClassPrototype(this),
-            "this.Class = " + this.className + ";"
+            "Class = " + this.className + ";"
         ].join("\n"));
     } catch (e) {
         throw new Error("Model.generateClass() failed to generate model for " + this.className + " with error " + e.message);
     }
+
+    Class.prototype = model.prototype;
+    Class.prototype.constructor = Class;
+
+    Class.prototype.save = function(callback) {
+
+        return model.save(this, callback);
+    };
+
+    Class.prototype.update = function(callback) {
+
+        return model.update(this, callback);
+    };
+
+    Class.prototype.destroy = function(callback) {
+
+        return model.destroy(this, callback);
+    };
+
+    this.Class = Class;
 };
 
 function Model_toModels(_this, array) {
@@ -477,22 +497,6 @@ function Model_generateClassAttributes(_this) {
     each(_this._schema.columns, function(_, key) {
         out.push("\tthis." + key + " = null;");
     });
-
-    return out.join("\n");
-}
-
-function Model_generateClassPrototype(_this) {
-    var out = [],
-        className = _this.className;
-
-    out.push(
-        className + ".prototype = model.prototype;",
-        className + ".prototype.constructor = " + className + ";",
-
-        className + ".prototype.save = function (callback) {\n\treturn model.save(this, callback);\n};",
-        className + ".prototype.update = function (callback) {\n\treturn model.update(this, callback);\n};",
-        className + ".prototype.destroy = function (callback) {\n\treturn model.destroy(this, callback);\n};"
-    );
 
     return out.join("\n");
 }

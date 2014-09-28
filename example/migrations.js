@@ -1,5 +1,5 @@
-var orm = require("../src/index"),
-    SQLite3Adaptor = require("sqlite3_adaptor");
+//var orm = require("../src/index"),
+var SQLite3Adaptor = require("sqlite3_adaptor");
 
 
 module.exports = {

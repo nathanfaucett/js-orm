@@ -2,7 +2,6 @@
 
 var filePath = require("file_path"),
     utils = require("utils"),
-    orm = require("../src/index"),
     migrations = require("./migrations"),
 
     options = {},

@@ -73,7 +73,7 @@ function filterColumns(_this, tableName, columns, options) {
     return out;
 }
 
-function filterAttributes(_this, tableName, columnName, attributes, options) {
+function filterAttributes(_this, tableName, columnName, attributes) {
     var out = {},
         coerced;
 

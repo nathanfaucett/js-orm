@@ -1,7 +1,5 @@
-var type = require("type"),
-    each = require("each"),
+var each = require("each"),
     utils = require("utils"),
-    inflect = require("inflect"),
 
     Table = require("./table");
 
