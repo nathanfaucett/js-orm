@@ -46,6 +46,8 @@ function Model(opts) {
 
     this._schema = new Table(options.tableName, options);
 
+    this.Class = null;
+
     this.adaptor = opts.adaptor;
 
     this.className = options.className;

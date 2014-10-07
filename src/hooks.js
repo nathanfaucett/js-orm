@@ -2,7 +2,6 @@ var hooks = module.exports;
 
 
 hooks.timestamps = function(options) {
-
     return {
         events: {
             beforeCreate: function(values) {

@@ -51,21 +51,12 @@ global.seed = function() {
     });
 };
 
-var UID_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-function uid(length) {
-    var str = "";
-    length || (length = 24);
-    while (length--) str += UID_CHARS[(Math.random() * 62) | 0];
-    return str;
-}
-
 
 User.on("init", function() {
 
     this.on("beforeCreate", function(model) {
 
-        model.password = uid();
+        model.password = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     });
 });
 
