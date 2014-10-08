@@ -41,6 +41,7 @@ function Model(opts) {
     this._init = false;
     this._collection = null;
 
+    this._accessible = {};
     this._validations = {};
     this._wrappers = {};
 
@@ -389,6 +390,19 @@ Model.prototype.destroyWhere = function(query, callback) {
     return new Query(this, "destroyWhere", query);
 };
 
+Model.prototype.accessible = function() {
+    var accessible = this._accessible,
+        i = arguments.length,
+        columnName;
+
+    while (i--) {
+        if ((columnName = arguments[i])) {
+            accessible[columnName] = true;
+        }
+    }
+    return this;
+};
+
 Model.prototype.validates = function(columnName) {
     var validations = this._validations,
         wrappers = this._wrappers,
@@ -420,6 +434,8 @@ function ValidationError(tableName, columnName, value, rule, args) {
 
 Model.prototype.validate = function(values, method) {
     var match = validator.match,
+
+        accessible = this._accessible,
         validations = this._validations,
         keys = this._schema._keys,
         i = keys.length,
@@ -431,8 +447,10 @@ Model.prototype.validate = function(values, method) {
         validation = validations[key];
 
         if (
-            (value === undefined || value === null) &&
-            (!validation || !validation.required || method !== "create")
+            accessible[key] === undefined || (
+                (value === undefined || value === null) &&
+                (!validation || !validation.required || method !== "create")
+            )
         ) {
             continue;
         }
