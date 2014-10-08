@@ -170,8 +170,6 @@ Table.prototype.filter = function(values) {
 
         if (value !== undefined && value !== null) {
             filtered[key] = coerceValue(columns[key].type, value);
-        } else {
-            filtered[key] = null;
         }
     }
 

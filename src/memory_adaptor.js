@@ -251,7 +251,7 @@ MemoryAdaptor.prototype.save = function(tableName, params, callback) {
             var value = params[key],
                 columnType = columns[key].type;
 
-            if (value === undefined) {
+            if (value == null) {
                 row[key] = null;
             } else {
                 if (columnType === "datetime") {
@@ -304,7 +304,7 @@ MemoryAdaptor.prototype.update = function(tableName, params, callback) {
         each(table.schema._keys, function(key) {
             var value = params[key];
 
-            if (value !== undefined) {
+            if (value != null) {
                 if (columns[key].type === "datetime") {
                     row[key] = type.isDate(value) ? value.toJSON() : (new Date(value).toJSON());
                 } else {

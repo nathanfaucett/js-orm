@@ -484,6 +484,8 @@ Model.prototype.generateClass = function() {
     };
 
     this.Class = Class;
+
+    return this;
 };
 
 function Model_toModels(_this, array) {

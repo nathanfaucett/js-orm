@@ -1,7 +1,7 @@
 var orm = require("../src/index.js");
 
 
-module.exports = new orm({
+module.exports = orm({
     schema: {
         timestamps: {
             underscore: false
