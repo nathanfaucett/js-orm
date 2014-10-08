@@ -432,8 +432,7 @@ Model.prototype.validate = function(values, method) {
 
         if (
             (value === undefined || value === null) &&
-            (!validation || !validation.required) &&
-            method !== "create"
+            (!validation || !validation.required || method !== "create")
         ) {
             continue;
         }
