@@ -136,7 +136,7 @@ Model.prototype.create = function(attributes, callback) {
 
     this._schema.coerce(model);
     this.emit("beforeValidate", model);
-    errors = this.validate(model);
+    errors = this.validate(model, "create");
 
     if (errors) {
         if (type.isFunction(callback)) {
@@ -184,7 +184,7 @@ Model.prototype.save = function(model, callback) {
 
     model = this._schema.filter(model);
     this.emit("beforeValidate", model);
-    errors = this.validate(model);
+    errors = this.validate(model, "save");
 
     if (errors) {
         if (type.isFunction(callback)) {
@@ -226,13 +226,13 @@ Model.prototype.save = function(model, callback) {
     });
 };
 
-Model.prototype.update = function(model, callback) {
+Model.prototype.update = function(id, model, callback) {
     var _this = this,
         errors;
 
     model = this._schema.filter(model);
     this.emit("beforeValidate", model);
-    errors = this.validate(model);
+    errors = this.validate(model, "update");
 
     if (errors) {
         if (type.isFunction(callback)) {
@@ -247,7 +247,7 @@ Model.prototype.update = function(model, callback) {
     this.emit("beforeUpdate", model);
 
     if (type.isFunction(callback)) {
-        this.adaptor.update(this.tableName, model, function(err, row) {
+        this.adaptor.update(this.tableName, id, model, function(err, row) {
             if (err) {
                 callback(err);
                 return;
@@ -261,7 +261,7 @@ Model.prototype.update = function(model, callback) {
     }
 
     return new Promise(function(resolve, reject) {
-        _this.adaptor.update(_this.tableName, model, function(err, row) {
+        _this.adaptor.update(_this.tableName, id, model, function(err, row) {
             if (err) {
                 reject(err);
                 return;
@@ -418,7 +418,7 @@ function ValidationError(tableName, columnName, value, rule, args) {
     this.args = args;
 }
 
-Model.prototype.validate = function(values) {
+Model.prototype.validate = function(values, method) {
     var match = validator.match,
         validations = this._validations,
         keys = this._schema._keys,
@@ -430,7 +430,13 @@ Model.prototype.validate = function(values) {
         value = values[key];
         validation = validations[key];
 
-        if ((value === undefined || value === null) && (!validation || !validation.required)) continue;
+        if (
+            (value === undefined || value === null) &&
+            (!validation || !validation.required) &&
+            method !== "create"
+        ) {
+            continue;
+        }
 
         for (rule in validation) {
             args = validation[rule];
@@ -475,7 +481,7 @@ Model.prototype.generateClass = function() {
 
     Class.prototype.update = function(callback) {
 
-        return model.update(this, callback);
+        return model.update(this.id, this, callback);
     };
 
     Class.prototype.destroy = function(callback) {

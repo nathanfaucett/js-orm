@@ -268,7 +268,7 @@ MemoryAdaptor.prototype.save = function(tableName, params, callback) {
     return this;
 };
 
-MemoryAdaptor.prototype.update = function(tableName, params, callback) {
+MemoryAdaptor.prototype.update = function(tableName, id, params, callback) {
     var table = this._tables[tableName],
         columns = table.schema.columns;
 
@@ -276,20 +276,20 @@ MemoryAdaptor.prototype.update = function(tableName, params, callback) {
         var rows = table.rows,
             row = queryOne(columns, rows, {
                 where: {
-                    id: params.id
+                    id: id
                 }
             }),
             err;
 
         if (!row) {
-            callback(new Error("MemoryAdaptor update(tableName, params, callback) no row found where id=" + params.id));
+            callback(new Error("MemoryAdaptor update(tableName, id, params, callback) no row found where id=" + id));
             return;
         }
 
         each(table.uniques, function(_, key) {
             if (isUnique(rows, key, params[key]) === false) {
                 err = new Error(
-                    "MemoryAdaptor update(tableName, params, callback) table " + tableName + " already has a row where " + key + " = " + params[key]
+                    "MemoryAdaptor update(tableName, id, params, callback) table " + tableName + " already has a row where " + key + " = " + params[key]
                 );
                 return false;
             }
