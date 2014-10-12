@@ -7,9 +7,9 @@ module.exports = orm({
             underscore: false
         }
     },
-    defaultAdaptor: "memory",
-    adaptors: {
-        "memory": new orm.MemoryAdaptor()
+    defaultAdapter: "memory",
+    adapters: {
+        "memory": new orm.MemoryAdapter()
     }
 })
 

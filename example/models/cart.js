@@ -11,5 +11,10 @@ var Cart = new orm.define({
     }
 });
 
+Cart.accessible(
+    "title",
+    "content"
+);
+
 
 module.exports = Cart;

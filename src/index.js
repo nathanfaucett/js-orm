@@ -16,7 +16,7 @@ orm.define = function define(options) {
 orm.hooks = require("./hooks");
 orm.functions = require("./functions");
 
-orm.MemoryAdaptor = require("./memory_adaptor");
+orm.MemoryAdapter = require("./memory_adapter");
 
 
 module.exports = orm;

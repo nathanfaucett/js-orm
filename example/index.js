@@ -5,15 +5,15 @@ global.User = collection.models.User,
 global.Cart = collection.models.Cart;
 
 if (!process.browser) {
-    var SQLite3Adaptor = require("sqlite3_adaptor"),
-        adaptor = new SQLite3Adaptor({
-            file: __dirname + "/sqlite.db"
+    var Adapter = require("mongodb_adapter"),
+        adapter = new Adapter({
+            database: "test"
         });
 
-    collection.bindAdaptor("sqlite3", adaptor);
+    collection.bindAdapter("mongodb", adapter);
 
-    User.adaptor = "sqlite3";
-    Cart.adaptor = "sqlite3";
+    User.adapter = "mongodb";
+    Cart.adapter = "mongodb";
 }
 
 global.User_test = function() {
@@ -24,7 +24,6 @@ global.User_test = function() {
             console.warn(err);
             return;
         }
-
         console.log(users);
     });
 };
@@ -52,15 +51,6 @@ global.seed = function() {
 };
 
 
-User.on("init", function() {
-
-    this.on("beforeCreate", function(model) {
-
-        model.password = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    });
-});
-
-
 collection.init(function(err) {
     if (err) {
         console.log(err);
@@ -70,10 +60,17 @@ collection.init(function(err) {
     if (!process.browser) {
         User_test();
         Cart_test();
+
+        User.update(2, {
+            email: "noname@not.com"
+        }, function(err, user) {
+            console.log(err, user);
+        });
     } else {
         require("./seed")(function(err) {
             if (err) {
                 console.log(err);
+                return;
             }
 
             User_test();

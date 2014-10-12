@@ -19,6 +19,12 @@ var User = new orm.define({
     }
 });
 
+User.accessible(
+    "firstName",
+    "lastName",
+    "age",
+    "email"
+);
 
 Object.defineProperty(User.prototype, "fullName", {
     get: function() {
@@ -40,5 +46,39 @@ User.validates("password")
     .required()
     .minLength(6);
 
+User.on("init", function() {
+    var Cart = require("./cart");
+
+    function encryptPassword(model) {
+
+        model.password = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    }
+
+    this.on("beforeCreate", encryptPassword);
+    this.on("beforeSave", encryptPassword);
+
+    this.on("destroy", function(users) {
+        users.forEach(function(user) {
+            Cart.find({
+                where: {
+                    userId: user.id
+                }
+            }, function(err, carts) {
+                if (err) {
+                    console.log(err);
+                    return;
+                }
+                carts.forEach(function(cart) {
+                    cart.destroy(function(err) {
+                        if (err) {
+                            console.log(err);
+                            return;
+                        }
+                    });
+                });
+            });
+        });
+    });
+});
 
 module.exports = User;

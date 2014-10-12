@@ -16,8 +16,8 @@ var collection = orm({
         timestamps: true
     },
 
-    adaptors: {
-        memory: new orm.MemoryAdaptor()
+    adapters: {
+        memory: new orm.MemoryAdapter()
     }
 });
 
@@ -65,7 +65,7 @@ module.exports = User;
 ```javascript
 var collection = require("../collection");
 
-collection.models.User.adaptor = "memory";
+collection.models.User.adapter = "memory";
 
 collection.init(function(err) {
     if (err) {

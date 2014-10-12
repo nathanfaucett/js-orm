@@ -1,13 +1,13 @@
 //var orm = require("../src/index"),
-var SQLite3Adaptor = require("sqlite3_adaptor");
+var SQLite3Adapter = require("sqlite3_adapter");
 
 
 module.exports = {
 
     folder: __dirname + "/migrate",
 
-    //adaptor: new orm.MemoryAdaptor()
-    adaptor: new SQLite3Adaptor({
+    //adapter: new orm.MemoryAdapter()
+    adapter: new SQLite3Adapter({
         file: __dirname + "/sqlite.db"
     })
 };

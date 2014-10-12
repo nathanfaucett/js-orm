@@ -114,11 +114,13 @@ function queryOne(columns, array, query) {
     return null;
 }
 
-function isUnique(array, key, value) {
-    var i = array.length;
+function isUnique(array, key, value, id) {
+    var i = array.length,
+        row;
 
     while (i--) {
-        if (array[i][key] === value) return false;
+        row = array[i];
+        if (row[key] === value && (id ? row.id !== id : true)) return false;
     }
     return true;
 }
@@ -175,13 +177,13 @@ var conditions = {
 };
 
 
-function MemoryAdaptor() {
+function MemoryAdapter() {
 
     this._collection = null;
     this._tables = {};
 }
 
-MemoryAdaptor.prototype.init = function(callback) {
+MemoryAdapter.prototype.init = function(callback) {
     var tables = this._tables,
         collection = this._collection,
         schema = collection && collection._schema;
@@ -219,7 +221,7 @@ MemoryAdaptor.prototype.init = function(callback) {
     return this;
 };
 
-MemoryAdaptor.prototype.save = function(tableName, params, callback) {
+MemoryAdapter.prototype.save = function(tableName, params, callback) {
     var table = this._tables[tableName],
         columns = table.schema.columns;
 
@@ -231,7 +233,7 @@ MemoryAdaptor.prototype.save = function(tableName, params, callback) {
         each(table.uniques, function(_, key) {
             if (isUnique(rows, key, params[key]) === false) {
                 err = new Error(
-                    "MemoryAdaptor save(tableName, params, callback) table " + tableName + " already has a row where " + key + " = " + params[key]
+                    "MemoryAdapter save(tableName, params, callback) table " + tableName + " already has a row where " + key + " = " + params[key]
                 );
                 return false;
             }
@@ -268,7 +270,7 @@ MemoryAdaptor.prototype.save = function(tableName, params, callback) {
     return this;
 };
 
-MemoryAdaptor.prototype.update = function(tableName, id, params, callback) {
+MemoryAdapter.prototype.update = function(tableName, id, params, callback) {
     var table = this._tables[tableName],
         columns = table.schema.columns;
 
@@ -282,14 +284,14 @@ MemoryAdaptor.prototype.update = function(tableName, id, params, callback) {
             err;
 
         if (!row) {
-            callback(new Error("MemoryAdaptor update(tableName, id, params, callback) no row found where id=" + id));
+            callback(new Error("MemoryAdapter update(tableName, id, params, callback) no row found where id=" + id));
             return;
         }
 
         each(table.uniques, function(_, key) {
-            if (isUnique(rows, key, params[key]) === false) {
+            if (isUnique(rows, key, params[key], id) === false) {
                 err = new Error(
-                    "MemoryAdaptor update(tableName, id, params, callback) table " + tableName + " already has a row where " + key + " = " + params[key]
+                    "MemoryAdapter update(tableName, id, params, callback) table " + tableName + " already has a row where " + key + " = " + params[key]
                 );
                 return false;
             }
@@ -318,7 +320,7 @@ MemoryAdaptor.prototype.update = function(tableName, id, params, callback) {
     return this;
 };
 
-MemoryAdaptor.prototype.find = function(tableName, query, callback) {
+MemoryAdapter.prototype.find = function(tableName, query, callback) {
     var table = this._tables[tableName];
 
     process.nextTick(function() {
@@ -329,7 +331,7 @@ MemoryAdaptor.prototype.find = function(tableName, query, callback) {
     return this;
 };
 
-MemoryAdaptor.prototype.findOne = function(tableName, query, callback) {
+MemoryAdapter.prototype.findOne = function(tableName, query, callback) {
     var table = this._tables[tableName];
 
     process.nextTick(function() {
@@ -340,98 +342,87 @@ MemoryAdaptor.prototype.findOne = function(tableName, query, callback) {
     return this;
 };
 
-MemoryAdaptor.prototype.destroy = function(tableName, params, callback) {
+MemoryAdapter.prototype.destroy = function(tableName, query, callback) {
     var table = this._tables[tableName];
 
     process.nextTick(function() {
         var rows = table.rows,
-            row = queryOne(table.schema.columns, rows, {
-                where: {
-                    id: params.id
-                }
-            });
+            results = queryAll(table.schema.columns, rows, query),
+            i = results.length,
+            out, row;
 
-        if (!row) {
-            callback(new Error("MemoryAdaptor destroy(tableName, params, callback) no row found where id=" + params.id));
+        if (!i) {
+            callback(new Error("MemoryAdapter destroy(tableName, query, callback) no rows found with query " + JSON.stringify(query)));
             return;
         }
 
-        rows.splice(utils.indexOf(rows, row), 1);
-        callback(undefined, utils.copy(row));
-    });
-    return this;
-};
-
-MemoryAdaptor.prototype.destroyWhere = function(tableName, query, callback) {
-    var table = this._tables[tableName];
-
-    process.nextTick(function() {
-        var rows = table.rows,
-            result = queryAll(table.schema.columns, rows, query),
-            i = result.length;
+        out = [];
 
         while (i--) {
-            rows.splice(utils.indexOf(rows, result[i]), 1);
+            row = results[i];
+            rows.splice(utils.indexOf(rows, row), 1);
+
+            out.push(utils.copy(row));
         }
 
-        callback(undefined, each(result, utils.copy));
+        callback(undefined, out);
     });
     return this;
 };
 
-MemoryAdaptor.prototype.createTable = function(tableName, columns, options, callback) {
+MemoryAdapter.prototype.createTable = function(tableName, columns, options, callback) {
 
     process.nextTick(callback);
     return this;
 };
 
-MemoryAdaptor.prototype.renameTable = function(tableName, newTableName, callback) {
+MemoryAdapter.prototype.renameTable = function(tableName, newTableName, callback) {
 
     process.nextTick(callback);
     return this;
 };
 
-MemoryAdaptor.prototype.removeTable = function(tableName, callback) {
+MemoryAdapter.prototype.removeTable = function(tableName, callback) {
 
     process.nextTick(callback);
     return this;
 };
 
-MemoryAdaptor.prototype.addColumn = function(tableName, columnName, column, options, callback) {
+MemoryAdapter.prototype.addColumn = function(tableName, columnName, column, options, callback) {
 
     process.nextTick(callback);
     return this;
 };
 
-MemoryAdaptor.prototype.renameColumn = function(tableName, columnName, newColumnName, callback) {
+MemoryAdapter.prototype.renameColumn = function(tableName, columnName, newColumnName, callback) {
 
     process.nextTick(callback);
     return this;
 };
 
-MemoryAdaptor.prototype.removeColumn = function(tableName, columnName, callback) {
+MemoryAdapter.prototype.removeColumn = function(tableName, columnName, callback) {
 
     process.nextTick(callback);
     return this;
 };
 
-MemoryAdaptor.prototype.createIndex = function(tableName, columnName, options, callback) {
+MemoryAdapter.prototype.createIndex = function(tableName, columnName, options, callback) {
 
     process.nextTick(callback);
     return this;
 };
 
-MemoryAdaptor.prototype.removeIndex = function(tableName, columnName, options, callback) {
+MemoryAdapter.prototype.removeIndex = function(tableName, columnName, options, callback) {
 
     process.nextTick(callback);
     return this;
 };
 
-MemoryAdaptor.prototype.removeDatabase = function(callback) {
+MemoryAdapter.prototype.removeDatabase = function(callback) {
 
     process.nextTick(callback);
     return this;
 };
 
 
-module.exports = MemoryAdaptor;
+module.exports = MemoryAdapter;

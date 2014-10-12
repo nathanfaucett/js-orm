@@ -13,21 +13,21 @@ function Collection(opts) {
     opts || (opts = {});
 
     options.schema = opts.schema;
-    options.adaptors = opts.adaptors;
-    options.defaultAdaptor = opts.defaultAdaptor || utils.keys(opts.adaptors)[0];
+    options.adapters = opts.adapters;
+    options.defaultAdapter = opts.defaultAdapter || utils.keys(opts.adapters)[0];
 
     EventEmitter.call(this);
 
     this._options = options;
     this._schema = new Schema(options.schema);
 
-    this._adaptors = {};
+    this._adapters = {};
     this._modelHash = {};
 
     this.models = {};
 
-    if (type.isObject(options.adaptors)) {
-        this.bindAdaptors(options.adaptors);
+    if (type.isObject(options.adapters)) {
+        this.bindAdapters(options.adapters);
     }
 }
 EventEmitter.extend(Collection);
@@ -43,7 +43,7 @@ Collection.prototype.init = function(callback) {
             return function() {};
         }
 
-        return function adaptorCallback(err) {
+        return function adapterCallback(err) {
 
             if (err || --length <= 0) {
                 done = true;
@@ -59,60 +59,60 @@ Collection.prototype.init = function(callback) {
         model.init();
     });
 
-    each(this._adaptors, function(adaptor) {
+    each(this._adapters, function(adapter) {
 
-        adaptor.init(createCallback());
+        adapter.init(createCallback());
     });
 
     return this;
 };
 
-Collection.prototype.adaptor = function(name) {
-    var adaptor = this._adaptors[name];
+Collection.prototype.adapter = function(name) {
+    var adapter = this._adapters[name];
 
-    if (!adaptor) {
+    if (!adapter) {
         throw new Error(
-            "Collection.adaptor(name)\n" +
-            "    no adaptor bound to collection found with tableName or className " + name
+            "Collection.adapter(name)\n" +
+            "    no adapter bound to collection found with tableName or className " + name
         );
     }
 
-    return adaptor;
+    return adapter;
 };
 
-Collection.prototype.bindAdaptor = function(name, adaptor) {
+Collection.prototype.bindAdapter = function(name, adapter) {
 
-    Collection_bindAdaptor(this, name, adaptor);
+    Collection_bindAdapter(this, name, adapter);
     return this;
 };
 
-Collection.prototype.bindAdaptors = function(adaptors) {
+Collection.prototype.bindAdapters = function(adapters) {
     var _this = this;
 
-    if (!type.isObject(adaptors)) {
+    if (!type.isObject(adapters)) {
         throw new Error(
-            "Collection.bindAdaptors(adaptors)\n" +
-            "    adaptors must be a Object ex {'memory': new MemoryAdaptor(), 'mysql': new MySQLAdaptor()}"
+            "Collection.bindAdapters(adapters)\n" +
+            "    adapters must be a Object ex {'memory': new MemoryAdapter(), 'mysql': new MySQLAdapter()}"
         );
     }
 
-    each(adaptors, function(adaptor, name) {
+    each(adapters, function(adapter, name) {
 
-        Collection_bindAdaptor(_this, name, adaptor);
+        Collection_bindAdapter(_this, name, adapter);
     });
     return this;
 };
 
-function Collection_bindAdaptor(_this, name, adaptor) {
-    var adaptors = _this._adaptors;
+function Collection_bindAdapter(_this, name, adapter) {
+    var adapters = _this._adapters;
 
-    if (!adaptors[name] && !adaptor._collection) {
-        adaptor._collection = _this;
-        adaptors[name] = adaptor;
+    if (!adapters[name] && !adapter._collection) {
+        adapter._collection = _this;
+        adapters[name] = adapter;
     } else {
         throw new Error(
-            "Collection.bind(adaptor)\n" +
-            "    adaptor " + adaptor._className + " already bound to collection"
+            "Collection.bind(adapter)\n" +
+            "    adapter " + adapter._className + " already bound to collection"
         );
     }
 }

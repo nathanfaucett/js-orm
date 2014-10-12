@@ -157,7 +157,7 @@ Table.prototype.functionAdd = function(columnName, attributes) {
     return this;
 };
 
-Table.prototype.filter = function(values) {
+Table.prototype.filter = function(values, accessible) {
     var filtered = {},
         columns = this.columns,
         keys = this._keys || [],
@@ -168,7 +168,7 @@ Table.prototype.filter = function(values) {
         key = keys[i];
         value = values[key];
 
-        if (value !== undefined && value !== null) {
+        if ((value !== undefined && value !== null) && (accessible ? accessible[key] : true)) {
             filtered[key] = coerceValue(columns[key].type, value);
         }
     }

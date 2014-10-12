@@ -50,10 +50,10 @@ migrations.down = function(options, callback) {
 };
 
 migrations.drop = function(options, callback) {
-    var adaptor = options.adaptor,
+    var adapter = options.adapter,
         verbose = options.verbose !== false;
 
-    adaptor.init(function(err) {
+    adapter.init(function(err) {
         var task;
 
         if (err) {
@@ -74,7 +74,7 @@ migrations.drop = function(options, callback) {
         });
         task._time = now();
 
-        adaptor[task.name].apply(adaptor, task.args);
+        adapter[task.name].apply(adapter, task.args);
     });
 };
 
@@ -103,14 +103,14 @@ function run(options, callback) {
         callback(new Error("options.folder must be an string"));
         return;
     }
-    if (!type.isObject(options.adaptor)) {
-        callback(new Error("options.adaptor must be an object"));
+    if (!type.isObject(options.adapter)) {
+        callback(new Error("options.adapter must be an object"));
         return;
     }
 
     load(options, function(err, migrations) {
         var migrationType = options.type,
-            adaptor = options.adaptor,
+            adapter = options.adapter,
             verbose = options.verbose !== false;
 
         if (err) {
@@ -118,7 +118,7 @@ function run(options, callback) {
             return;
         }
 
-        adaptor.init(function(err) {
+        adapter.init(function(err) {
             var tasks = [],
                 index = 0,
                 length;
@@ -160,14 +160,14 @@ function run(options, callback) {
 
                 task = tasks[index++];
 
-                if (!type.isFunction(adaptor[task.name])) {
-                    next(new Error("adaptor does not have method " + task.name));
+                if (!type.isFunction(adapter[task.name])) {
+                    next(new Error("adapter does not have method " + task.name));
                     return;
                 }
 
                 try {
                     task._time = now();
-                    adaptor[task.name].apply(adaptor, task.args);
+                    adapter[task.name].apply(adapter, task.args);
                 } catch (e) {
                     next(e);
                 }
