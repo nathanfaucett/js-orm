@@ -46,18 +46,18 @@ User.validates("password")
     .required()
     .minLength(6);
 
-User.on("init", function() {
+User.on("init", function(next) {
     var Cart = require("./cart");
 
-    function encryptPassword(model) {
-
+    function encryptPassword(model, next) {
         model.password = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        next();
     }
 
     this.on("beforeCreate", encryptPassword);
     this.on("beforeSave", encryptPassword);
 
-    this.on("destroy", function(users) {
+    this.on("destroy", function(users, next) {
         users.forEach(function(user) {
             Cart.find({
                 where: {
@@ -65,13 +65,13 @@ User.on("init", function() {
                 }
             }, function(err, carts) {
                 if (err) {
-                    console.log(err);
+                    next(err);
                     return;
                 }
                 carts.forEach(function(cart) {
                     cart.destroy(function(err) {
                         if (err) {
-                            console.log(err);
+                            next(err);
                             return;
                         }
                     });
@@ -79,6 +79,9 @@ User.on("init", function() {
             });
         });
     });
+
+    next();
 });
+
 
 module.exports = User;

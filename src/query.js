@@ -8,8 +8,11 @@ function Query(model, action, conditions) {
     this._action = action;
 
     this._currentKey = false;
-    this._conditions = utils.extend({}, conditions);
-    this._params = {};
+
+    this._conditions = utils.extend({}, conditions.where);
+
+    delete conditions.where;
+    this._params = conditions;
 }
 
 Query.prototype.where = function(key, value) {

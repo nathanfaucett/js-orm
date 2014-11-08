@@ -13,7 +13,8 @@ var Cart = new orm.define({
 
 Cart.accessible(
     "title",
-    "content"
+    "content",
+    "userId"
 );
 
 

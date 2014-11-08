@@ -7,8 +7,6 @@ module.exports = function seed(callback) {
         length = 0,
         done = false;
 
-    console.time("seed");
-
     function createCallback() {
         length++;
 

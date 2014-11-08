@@ -58,7 +58,7 @@ function Model(opts) {
 }
 EventEmitter.extend(Model);
 
-Model.prototype.init = function() {
+Model.prototype.init = function(callback) {
     var _this = this,
         adapter = this.adapter || this._collection._options.defaultAdapter,
         schema = this._schema;
@@ -95,7 +95,7 @@ Model.prototype.init = function() {
     this.generateClass();
     this._wrappers = {};
 
-    this.emit("init");
+    this.emitAsync("init", callback);
 
     return this;
 };
@@ -132,40 +132,50 @@ Model.prototype["new"] = Model.prototype.build;
 
 Model.prototype.create = function(attributes, callback) {
     var _this = this,
+        isPromise = !type.isFunction(callback),
         model = this.build(attributes),
-        errors;
+        defer;
 
-    this._schema.coerce(model);
-    this.emit("beforeValidate", model);
-    errors = this.validate(model);
+    if (isPromise) {
+        defer = Promise.defer();
+    }
 
-    if (errors) {
-        if (type.isFunction(callback)) {
-            callback(errors);
-            return undefined;
-        } else {
-            return Promise.reject(errors);
+    function resolve(row) {
+        return isPromise ? defer.resolve(row) : callback(undefined, row);
+    }
+
+    function reject(err) {
+        return isPromise ? defer.reject(err) : callback(err);
+    }
+
+    function beforeValidate(err) {
+        var errors;
+
+        if (err) {
+            reject(err);
+            return;
         }
+        if ((errors = _this.validate(model))) {
+            reject(errors);
+            return;
+        }
+
+        _this.emitAsync("validate", model, validate);
     }
 
-    this.emit("validate", model);
-    this.emit("beforeCreate", model);
-
-    if (type.isFunction(callback)) {
-        this.adapter.save(this.tableName, model, function(err, row) {
-            if (err) {
-                callback(err);
-                return;
-            }
-
-            row = _this.build(row);
-            _this.emit("create", row);
-            callback(undefined, row);
-        });
-        return undefined;
+    function validate(err) {
+        if (err) {
+            reject(err);
+            return;
+        }
+        _this.emitAsync("beforeCreate", model, beforeCreate);
     }
 
-    return new Promise(function(resolve, reject) {
+    function beforeCreate(err) {
+        if (err) {
+            reject(err);
+            return;
+        }
         _this.adapter.save(_this.tableName, model, function(err, row) {
             if (err) {
                 reject(err);
@@ -173,47 +183,67 @@ Model.prototype.create = function(attributes, callback) {
             }
 
             row = _this.build(row);
-            _this.emit("create", row);
-            resolve(row);
+            _this.emitAsync("create", row, function(err) {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                resolve(row);
+            });
         });
-    });
+    }
+
+    this._schema.coerce(model);
+    this.emitAsync("beforeValidate", model, beforeValidate);
+
+    return defer ? defer.promise : undefined;
 };
 
 Model.prototype.save = function(model, callback) {
     var _this = this,
-        errors;
+        isPromise = !type.isFunction(callback),
+        defer;
 
-    model = this._schema.filter(model);
-    this.emit("beforeValidate", model);
-    errors = this.validate(model);
+    if (isPromise) {
+        defer = Promise.defer();
+    }
 
-    if (errors) {
-        if (type.isFunction(callback)) {
-            callback(errors);
-            return undefined;
-        } else {
-            return Promise.reject(errors);
+    function resolve(row) {
+        return isPromise ? defer.resolve(row) : callback(undefined, row);
+    }
+
+    function reject(err) {
+        return isPromise ? defer.reject(err) : callback(err);
+    }
+
+    function beforeValidate(err) {
+        var errors;
+
+        if (err) {
+            reject(err);
+            return;
         }
+        if ((errors = _this.validate(model))) {
+            reject(errors);
+            return;
+        }
+
+        _this.emitAsync("validate", model, validate);
     }
 
-    this.emit("validate", model);
-    this.emit("beforeSave", model);
-
-    if (type.isFunction(callback)) {
-        this.adapter.save(this.tableName, model, function(err, row) {
-            if (err) {
-                callback(err);
-                return;
-            }
-
-            row = _this.build(row);
-            _this.emit("save", row);
-            callback(undefined, row);
-        });
-        return undefined;
+    function validate(err) {
+        if (err) {
+            reject(err);
+            return;
+        }
+        _this.emitAsync("beforeSave", model, beforeSave);
     }
 
-    return new Promise(function(resolve, reject) {
+    function beforeSave(err) {
+        if (err) {
+            reject(err);
+            return;
+        }
         _this.adapter.save(_this.tableName, model, function(err, row) {
             if (err) {
                 reject(err);
@@ -221,47 +251,67 @@ Model.prototype.save = function(model, callback) {
             }
 
             row = _this.build(row);
-            _this.emit("save", row);
-            resolve(row);
+            _this.emitAsync("save", row, function(err) {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                resolve(row);
+            });
         });
-    });
+    }
+
+    this._schema.coerce(model);
+    this.emitAsync("beforeValidate", model, beforeValidate);
+
+    return defer ? defer.promise : undefined;
 };
 
 Model.prototype.update = function(id, model, callback) {
     var _this = this,
-        errors;
+        isPromise = !type.isFunction(callback),
+        defer;
 
-    model = this._schema.filter(model, this._accessible);
-    this.emit("beforeValidate", model);
-    errors = this.validate(model, "update");
+    if (isPromise) {
+        defer = Promise.defer();
+    }
 
-    if (errors) {
-        if (type.isFunction(callback)) {
-            callback(errors);
-            return undefined;
-        } else {
-            return Promise.reject(errors);
+    function resolve(row) {
+        return isPromise ? defer.resolve(row) : callback(undefined, row);
+    }
+
+    function reject(err) {
+        return isPromise ? defer.reject(err) : callback(err);
+    }
+
+    function beforeValidate(err) {
+        var errors;
+
+        if (err) {
+            reject(err);
+            return;
         }
+        if ((errors = _this.validate(model))) {
+            reject(errors);
+            return;
+        }
+
+        _this.emitAsync("validate", model, validate);
     }
 
-    this.emit("validate", model);
-    this.emit("beforeUpdate", model);
-
-    if (type.isFunction(callback)) {
-        this.adapter.update(this.tableName, id, model, function(err, row) {
-            if (err) {
-                callback(err);
-                return;
-            }
-
-            row = _this.build(row);
-            _this.emit("update", row);
-            callback(undefined, row);
-        });
-        return undefined;
+    function validate(err) {
+        if (err) {
+            reject(err);
+            return;
+        }
+        _this.emitAsync("beforeUpdate", model, beforeUpdate);
     }
 
-    return new Promise(function(resolve, reject) {
+    function beforeUpdate(err) {
+        if (err) {
+            reject(err);
+            return;
+        }
         _this.adapter.update(_this.tableName, id, model, function(err, row) {
             if (err) {
                 reject(err);
@@ -269,10 +319,20 @@ Model.prototype.update = function(id, model, callback) {
             }
 
             row = _this.build(row);
-            _this.emit("update", row);
-            resolve(row);
+            _this.emitAsync("update", row, function(err) {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                resolve(row);
+            });
         });
-    });
+    }
+
+    model = this._schema.filter(model, this._accessible);
+    this.emitAsync("beforeValidate", model, beforeValidate);
+
+    return defer ? defer.promise : undefined;
 };
 
 Model.prototype.find = function(query, callback) {
@@ -334,7 +394,8 @@ Model.prototype.findOne = function(query, callback) {
 };
 
 Model.prototype.destroy = function(query, callback) {
-    var _this = this;
+    var _this = this,
+        beforeDestroy;
 
     if (type.isFunction(query)) {
         callback = query;
@@ -342,21 +403,36 @@ Model.prototype.destroy = function(query, callback) {
     }
 
     if (type.isFunction(callback)) {
-        if (!type.isObject(query)) query = {};
-
-        if (query.where === undefined || query.where === null) {
-            query.where = {};
-        }
-
-        this.adapter.destroy(this.tableName, query, function(err, rows) {
+        beforeDestroy = function beforeDestroy(err) {
             if (err) {
                 callback(err);
                 return;
             }
 
-            _this.emit("destroy", rows);
-            callback(undefined, Model_toModels(_this, rows));
-        });
+            if (!type.isObject(query)) query = {};
+
+            if (query.where === undefined || query.where === null) {
+                query.where = {};
+            }
+
+            _this.adapter.destroy(_this.tableName, query, function(err, rows) {
+                if (err) {
+                    callback(err);
+                    return;
+                }
+
+                rows = Model_toModels(_this, rows);
+                _this.emitAsync("destroy", rows, function(err) {
+                    if (err) {
+                        callback(err);
+                        return;
+                    }
+                    callback(undefined, rows);
+                });
+            });
+        };
+
+        this.emitAsync("beforeDestroy", query, beforeDestroy);
         return undefined;
     }
 

@@ -34,19 +34,18 @@ EventEmitter.extend(Collection);
 
 Collection.prototype.init = function(callback) {
     var length = 0,
-        done = false;
+        called = false;
 
     function createCallback() {
         length++;
 
-        if (done) {
-            return function() {};
-        }
+        return function done(err) {
+            if (called === true) {
+                return;
+            }
 
-        return function adapterCallback(err) {
-
-            if (err || --length <= 0) {
-                done = true;
+            if (err || --length === 0) {
+                called = true;
                 callback(err);
             }
         };
@@ -56,7 +55,7 @@ Collection.prototype.init = function(callback) {
 
     each(this.models, function(model) {
 
-        model.init();
+        model.init(createCallback());
     });
 
     each(this._adapters, function(adapter) {

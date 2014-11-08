@@ -60,12 +60,6 @@ collection.init(function(err) {
     if (!process.browser) {
         User_test();
         Cart_test();
-
-        User.update(2, {
-            email: "noname@not.com"
-        }, function(err, user) {
-            console.log(err, user);
-        });
     } else {
         require("./seed")(function(err) {
             if (err) {

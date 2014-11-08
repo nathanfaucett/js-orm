@@ -189,7 +189,6 @@ MemoryAdapter.prototype.init = function(callback) {
         schema = collection && collection._schema;
 
     process.nextTick(function() {
-
         if (schema) {
             each(schema.tables, function(tableSchema, tableName) {
                 var counters = {},
@@ -212,12 +211,15 @@ MemoryAdapter.prototype.init = function(callback) {
                     rows: []
                 };
             });
-
-            callback();
-        } else {
-            callback();
         }
+
+        callback();
     });
+    return this;
+};
+
+MemoryAdapter.prototype.close = function() {
+
     return this;
 };
 
