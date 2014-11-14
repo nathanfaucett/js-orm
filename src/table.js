@@ -16,6 +16,7 @@ var types = [
         "primaryKey",
         "foreignKey",
         "autoIncrement",
+        "defaults",
         "index",
         "unique"
     ];
@@ -23,22 +24,23 @@ var types = [
 function coerceType(value) {
     value = (value + "").toLowerCase();
 
-    if (value === "int") {
-        return "integer";
-    } else if (value === "double" || value === "decimal" || value === "dec") {
-        return "float";
-    } else if (value === "bool") {
-        return "boolean";
-    } else if (value === "date" || value === "time") {
-        return "datetime";
-    } else if (value === "text" || value === "str") {
-        value = "string";
-    }
-
-    return value;
+    return (
+        (value === "integer" || value === "int") ? "integer" :
+        (value === "float" || value === "double" || value === "decimal" || value === "dec") ? "float" :
+        (value === "boolean" || value === "bool") ? "boolean" :
+        (value === "datetime" || value === "date" || value === "time") ? "datetime" :
+        "string"
+    );
 }
 
-function coerceValue(type, value) {
+function coerceValue(attributes, value) {
+    var type = attributes.type,
+        defaults = attributes.defaults;
+
+    if (value == null && defaults != null) {
+        value = defaults;
+    }
+
     if (type === "string") {
         return typeof(value.toString) !== "undefined" ? value.toString() : value + "";
     } else if (type === "integer" || type === "float") {
@@ -83,9 +85,7 @@ Table.allowed = allowed;
 Table.prototype.init = function() {
     var _this = this,
         options = this._options,
-
         schema = this.schema,
-
         columns = this.columns;
 
     if (options.autoId) this.add("autoId", options.autoId);
@@ -169,7 +169,7 @@ Table.prototype.filter = function(values, accessible) {
         value = values[key];
 
         if ((value !== undefined && value !== null) && (accessible ? accessible[key] : true)) {
-            filtered[key] = coerceValue(columns[key].type, value);
+            filtered[key] = coerceValue(columns[key], value);
         }
     }
 
@@ -187,7 +187,7 @@ Table.prototype.coerce = function(values) {
         value = values[key];
 
         if (value !== undefined && value !== null) {
-            values[key] = coerceValue(columns[key].type, value);
+            values[key] = coerceValue(columns[key], value);
         }
     }
 

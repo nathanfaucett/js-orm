@@ -59,23 +59,15 @@ User.on("init", function(next) {
 
     this.on("destroy", function(users, next) {
         users.forEach(function(user) {
-            Cart.find({
+            Cart.destroy({
                 where: {
                     userId: user.id
                 }
-            }, function(err, carts) {
+            }, function(err) {
                 if (err) {
                     next(err);
                     return;
                 }
-                carts.forEach(function(cart) {
-                    cart.destroy(function(err) {
-                        if (err) {
-                            next(err);
-                            return;
-                        }
-                    });
-                });
             });
         });
     });

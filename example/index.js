@@ -16,26 +16,30 @@ if (!process.browser) {
     Cart.adapter = "mongodb";
 }
 
-global.User_test = function() {
+global.User_test = function(callback) {
     console.time("User.test");
     User.find(function(err, users) {
         console.timeEnd("User.test");
         if (err) {
+            callback && callback();
             console.warn(err);
             return;
         }
+        callback && callback();
         console.log(users);
     });
 };
 
-global.Cart_test = function() {
+global.Cart_test = function(callback) {
     console.time("Cart.test");
     Cart.find(function(err, carts) {
         console.timeEnd("Cart.test");
         if (err) {
+            callback && callback();
             console.warn(err);
             return;
         }
+        callback && callback();
         console.log(carts);
     });
 };
@@ -58,8 +62,7 @@ collection.init(function(err) {
     }
 
     if (!process.browser) {
-        User_test();
-        Cart_test();
+        User_test(Cart_test);
     } else {
         require("./seed")(function(err) {
             if (err) {
