@@ -16,7 +16,6 @@ var types = [
         "primaryKey",
         "foreignKey",
         "autoIncrement",
-        "defaults",
         "index",
         "unique"
     ];
@@ -39,6 +38,9 @@ function coerceValue(attributes, value) {
 
     if (value == null && defaults != null) {
         value = defaults;
+    }
+    if (value == null) {
+        return null;
     }
 
     if (type === "string") {
@@ -250,6 +252,8 @@ function Table_parseColumn(_this, columnName, attributes, column) {
             }
 
             column[key] = coerced;
+        } else if (key === "defaults") {
+            column[key] = value;
         } else {
             if (utils.indexOf(allowed, key) === -1) {
                 throw new Error(
