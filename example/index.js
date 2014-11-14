@@ -1,8 +1,9 @@
 global.collection = require("./collection");
 
 
-global.User = collection.models.User,
+global.User = collection.models.User;
 global.Cart = collection.models.Cart;
+global.Item = collection.models.Item;
 
 if (!process.browser) {
     var Adapter = require("mongodb_adapter"),
@@ -44,6 +45,20 @@ global.Cart_test = function(callback) {
     });
 };
 
+global.Item_test = function(callback) {
+    console.time("Item.test");
+    Item.find(function(err, items) {
+        console.timeEnd("Item.test");
+        if (err) {
+            callback && callback();
+            console.warn(err);
+            return;
+        }
+        callback && callback();
+        console.log(items);
+    });
+};
+
 global.seed = function() {
     console.time("seed");
     require("./seed")(function(err) {
@@ -62,7 +77,9 @@ collection.init(function(err) {
     }
 
     if (!process.browser) {
-        User_test(Cart_test);
+        User_test(function() {
+            Cart_test(Item_test);
+        });
     } else {
         require("./seed")(function(err) {
             if (err) {
@@ -70,8 +87,9 @@ collection.init(function(err) {
                 return;
             }
 
-            User_test();
-            Cart_test();
+            User_test(function() {
+                Cart_test(Item_test);
+            });
         });
     }
 });

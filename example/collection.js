@@ -15,5 +15,6 @@ module.exports = orm({
 
 .bindModels(
     require("./models/user"),
-    require("./models/cart")
+    require("./models/cart"),
+    require("./models/item")
 );

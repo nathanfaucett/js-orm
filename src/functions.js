@@ -1,4 +1,5 @@
 var type = require("type"),
+    each = require("each"),
     inflect = require("inflect");
 
 
@@ -35,6 +36,13 @@ functions.timestamps = function(schema, table, options) {
 functions.hasMany = function(schema, table, options) {
     var model, columnName;
 
+    if (type.isArray(options)) {
+        each(options, function(value) {
+            functions.hasMany(schema, table, value);
+        });
+        return;
+    }
+
     options = type.isObject(options) ? options : {
         collection: options + ""
     };
@@ -56,6 +64,13 @@ functions.hasMany = function(schema, table, options) {
 
 functions.hasOne = function(schema, table, options) {
     var model, columnName;
+
+    if (type.isArray(options)) {
+        each(options, function(value) {
+            functions.hasOne(schema, table, value);
+        });
+        return;
+    }
 
     options = type.isObject(options) ? options : {
         model: options + ""
@@ -79,6 +94,13 @@ functions.hasOne = function(schema, table, options) {
 
 functions.belongsTo = function(schema, table, options) {
     var model, columnName;
+
+    if (type.isArray(options)) {
+        each(options, function(value) {
+            functions.belongsTo(schema, table, value);
+        });
+        return;
+    }
 
     options = type.isObject(options) ? options : {
         model: options + ""

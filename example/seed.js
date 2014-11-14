@@ -3,6 +3,7 @@ module.exports = function seed(callback) {
 
         User = collection.models.User,
         Cart = collection.models.Cart,
+        Item = collection.models.Item,
 
         length = 0,
         done = false;
@@ -83,5 +84,20 @@ module.exports = function seed(callback) {
         userId: 3,
         title: "Cart of Great",
         content: "has many good times"
+    }, createCallback());
+
+
+    Item.create({
+        cartId: 1,
+        userId: 2,
+        title: "My item",
+        content: "its alright"
+    }, createCallback());
+
+    Item.create({
+        cartId: 1,
+        userId: 2,
+        title: "This Item is Great!",
+        content: "Maybe?"
     }, createCallback());
 };
