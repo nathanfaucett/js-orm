@@ -164,14 +164,15 @@ Table.prototype.filter = function(values, accessible) {
         columns = this.columns,
         keys = this._keys || [],
         i = keys.length,
-        key, value;
+        key, value, newValue;
 
     while (i--) {
         key = keys[i];
         value = values[key];
+        newValue = coerceValue(columns[key], value);
 
-        if ((value !== undefined && value !== null) && (accessible ? accessible[key] : true)) {
-            filtered[key] = coerceValue(columns[key], value);
+        if (newValue != null && (accessible ? accessible[key] : true)) {
+            filtered[key] = newValue;
         }
     }
 
@@ -182,15 +183,11 @@ Table.prototype.coerce = function(values) {
     var columns = this.columns,
         keys = this._keys || [],
         i = keys.length,
-        key, value;
+        key;
 
     while (i--) {
         key = keys[i];
-        value = values[key];
-
-        if (value !== undefined && value !== null) {
-            values[key] = coerceValue(columns[key], value);
-        }
+        values[key] = coerceValue(columns[key], values[key]);
     }
 
     return values;
