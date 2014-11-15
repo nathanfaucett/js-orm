@@ -7,6 +7,7 @@ var Item = new orm.define({
     schema: {
         title: "string",
         content: "string",
+        json: "json",
         belongsTo: ["user", "cart"]
     }
 });
@@ -14,7 +15,7 @@ var Item = new orm.define({
 Item.accessible(
     "title",
     "content",
-    "userId"
+    "json"
 );
 
 

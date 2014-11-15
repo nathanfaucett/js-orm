@@ -91,13 +91,19 @@ module.exports = function seed(callback) {
         cartId: 1,
         userId: 2,
         title: "My item",
-        content: "its alright"
+        content: "its alright",
+        json: {
+            name: "bob"
+        }
     }, createCallback());
 
     Item.create({
         cartId: 1,
         userId: 2,
         title: "This Item is Great!",
-        content: "Maybe?"
+        content: "Maybe?",
+        json: {
+            name: "bob"
+        }
     }, createCallback());
 };
