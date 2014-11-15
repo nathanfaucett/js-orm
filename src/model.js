@@ -118,6 +118,12 @@ Model.prototype.build = function(attributes) {
             if (attribute != null) {
                 if (columnType === "datetime") {
                     instance[key] = (new Date(attribute)).toJSON();
+                } else if (columnType === "json") {
+                    try {
+                        instance[key] = JSON.parse(attribute);
+                    } catch (e) {
+                        instance[key] = null;
+                    }
                 } else {
                     instance[key] = attribute;
                 }

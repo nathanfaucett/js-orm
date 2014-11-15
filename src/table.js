@@ -10,6 +10,7 @@ var types = [
         "integer",
         "float",
         "datetime",
+        "json",
         "boolean"
     ],
     allowed = [
@@ -28,6 +29,7 @@ function coerceType(value) {
         (value === "float" || value === "double" || value === "decimal" || value === "dec") ? "float" :
         (value === "boolean" || value === "bool") ? "boolean" :
         (value === "datetime" || value === "date" || value === "time") ? "datetime" :
+        (value === "json" || value === "object" || value === "array") ? "json" :
         "string"
     );
 }
@@ -47,6 +49,8 @@ function coerceValue(attributes, value) {
         return typeof(value.toString) !== "undefined" ? value.toString() : value + "";
     } else if (type === "integer" || type === "float") {
         return +value;
+    } else if (type === "json") {
+        return JSON.stringify(value);
     } else if (type === "boolean") {
         return !!value;
     } else if (type === "datetime") {
