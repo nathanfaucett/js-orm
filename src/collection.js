@@ -66,6 +66,15 @@ Collection.prototype.init = function(callback) {
     return this;
 };
 
+Collection.prototype.close = function() {
+
+    each(this._adapters, function(adapter) {
+
+        adapter.close();
+    });
+    return this;
+};
+
 Collection.prototype.adapter = function(name) {
     var adapter = this._adapters[name];
 
