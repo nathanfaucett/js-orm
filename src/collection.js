@@ -54,13 +54,19 @@ Collection.prototype.init = function(callback) {
     this._schema.init();
 
     each(this.models, function(model) {
+        var callback = createCallback();
 
-        model.init(createCallback());
+        process.nextTick(function() {
+            model.init(callback);
+        });
     });
 
     each(this._adapters, function(adapter) {
+        var callback = createCallback();
 
-        adapter.init(createCallback());
+        process.nextTick(function() {
+            adapter.init(callback);
+        });
     });
 
     return this;

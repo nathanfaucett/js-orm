@@ -54,10 +54,10 @@ User.on("init", function(next) {
         next();
     }
 
-    this.on("beforeCreate", encryptPassword);
-    this.on("beforeSave", encryptPassword);
+    User.on("beforeCreate", encryptPassword);
+    User.on("beforeSave", encryptPassword);
 
-    this.on("destroy", function(users, next) {
+    User.on("destroy", function(users, next) {
         users.forEach(function(user) {
             Cart.destroy({
                 where: {
