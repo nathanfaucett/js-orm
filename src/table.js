@@ -1,6 +1,9 @@
-var type = require("type"),
-    each = require("each"),
-    utils = require("utils"),
+var isString = require("is_string"),
+    forEach = require("for_each"),
+    keys = require("keys"),
+    extend = require("extend"),
+    indexOf = require("index_of"),
+    has = require("has"),
 
     functions = require("./functions");
 
@@ -68,7 +71,7 @@ function Table(tableName, opts) {
 
     options.autoId = (opts.autoId != null) ? opts.autoId : true;
     options.timestamps = (opts.timestamps != null) ? opts.timestamps : true;
-    options.functions = utils.extend(opts.functions || {}, functions);
+    options.functions = extend(opts.functions || {}, functions);
 
     this._options = options;
     this._keys = null;
@@ -97,11 +100,11 @@ Table.prototype.init = function() {
     if (options.autoId) this.add("autoId", options.autoId);
     if (options.timestamps) this.add("timestamps", options.timestamps);
 
-    each(this._defines, function(column, columnName) {
+    forEach(this._defines, function(column, columnName) {
 
-        columns[columnName] = utils.copy(column);
+        columns[columnName] = extend({}, column);
     });
-    each(this._functions, function(opts, functionName) {
+    forEach(this._functions, function(opts, functionName) {
 
         options.functions[functionName](schema, _this, opts);
     });
@@ -135,7 +138,7 @@ Table.prototype.has = function(columnName) {
 Table.prototype.addColumns = function(columns) {
     var _this = this;
 
-    each(columns, function(attributes, columnName) {
+    forEach(columns, function(attributes, columnName) {
 
         _this.add(columnName, attributes);
     });
@@ -145,7 +148,7 @@ Table.prototype.addColumns = function(columns) {
 Table.prototype.add = function(columnName, attributes) {
     var defines;
 
-    if (utils.has(this._options.functions, columnName)) {
+    if (has(this._options.functions, columnName)) {
         Table_parseFunction(this, columnName, attributes);
     } else {
         defines = this._defines;
@@ -200,24 +203,24 @@ Table.prototype.coerce = function(values) {
 Table.prototype.toJSON = function() {
     var json = {};
 
-    each(this._defines, function(column, columnName) {
-        var keys = utils.keys(column),
-            i = keys.length,
+    forEach(this._defines, function(column, columnName) {
+        var objectKeys = keys(column),
+            i = objectKeys.length,
             jsonColumn, key;
 
         if (i === 1) {
-            key = keys[0];
+            key = objectKeys[0];
             json[columnName] = column[key];
         } else {
             jsonColumn = json[columnName] = {};
 
             while (i--) {
-                key = keys[i];
+                key = objectKeys[i];
                 jsonColumn[key] = column[key];
             }
         }
     });
-    each(this._functions, function(options, functionName) {
+    forEach(this._functions, function(options, functionName) {
 
         json[functionName] = options;
     });
@@ -231,19 +234,19 @@ function Table_parseFunction(_this, columnName, attributes) {
 }
 
 function Table_parseColumn(_this, columnName, attributes, column) {
-    if (type.isString(attributes)) {
+    if (isString(attributes)) {
         attributes = {
             type: attributes
         };
     }
 
-    each(attributes, function(value, key) {
+    forEach(attributes, function(value, key) {
         var coerced;
 
         if (key === "type") {
             coerced = coerceType(value);
 
-            if (utils.indexOf(types, coerced) === -1) {
+            if (indexOf(types, coerced) === -1) {
                 throw new Error(
                     "Table parseColumn(columnName, attributes, column)\n" +
                     "    table " + _this.tableName + " was passed a column named " + columnName + " with a value of " + value + "\n" +
@@ -256,7 +259,7 @@ function Table_parseColumn(_this, columnName, attributes, column) {
         } else if (key === "defaults") {
             column[key] = value;
         } else {
-            if (utils.indexOf(allowed, key) === -1) {
+            if (indexOf(allowed, key) === -1) {
                 throw new Error(
                     "Table parseColumn(columnName, attributes, column)\n" +
                     "    table " + _this.tableName + " column " + columnName + " passed " + value + " allowed attributes are,\n" +

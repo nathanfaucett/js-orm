@@ -23,15 +23,23 @@
     "grunt-jsbeautifier": ""
   },
   "dependencies": {
-    "each": "nathanfaucett/each",
+    "for_each": "nathanfaucett/for_each",
+    "map": "nathanfaucett/map",
     "event_emitter": "nathanfaucett/event_emitter",
     "file_path": "nathanfaucett/file_path",
     "file_utils": "nathanfaucett/file_utils",
     "inflect": "nathanfaucett/inflect",
     "optimist": "^0.6.1",
-    "promise": "nathanfaucett/promise",
-    "type": "nathanfaucett/type",
-    "utils": "nathanfaucett/utils",
+    "promise_polyfill": "nathanfaucett/promise_polyfill",
+    "is_string": "nathanfaucett/is_string",
+    "is_object": "nathanfaucett/is_object",
+    "is_array": "nathanfaucett/is_array",
+    "is_date": "nathanfaucett/is_date",
+    "is_function": "nathanfaucett/is_function",
+    "keys": "nathanfaucett/keys",
+    "index_of": "nathanfaucett/index_of",
+    "extend": "nathanfaucett/extend",
+    "has": "nathanfaucett/has",
     "validator": "nathanfaucett/validator"
   }
 }

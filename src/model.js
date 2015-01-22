@@ -1,8 +1,11 @@
 var EventEmitter = require("event_emitter"),
-    each = require("each"),
-    type = require("type"),
+    forEach = require("for_each"),
+    isString = require("is_string"),
+    isFunction = require("is_function"),
+    isObject = require("is_object"),
+    isArray = require("is_array"),
     inflect = require("inflect"),
-    Promise = require("promise"),
+    PromisePolyfill = require("promise_polyfill"),
     validator = require("validator"),
 
     Query = require("./query"),
@@ -18,7 +21,7 @@ function Model(opts) {
 
     opts || (opts = {});
 
-    if (!type.isString(opts.name) && !type.isString(opts.className)) {
+    if (!isString(opts.name) && !isString(opts.className)) {
         throw new Error(
             "Model(options)\n" +
             "    options.name or options.className required as string ex {name: 'User'}"
@@ -29,7 +32,7 @@ function Model(opts) {
     options.functions = opts.functions;
 
     options.className = opts.name || opts.className;
-    options.tableName = type.isString(opts.tableName) ? opts.tableName : inflect.tableize(options.className);
+    options.tableName = isString(opts.tableName) ? opts.tableName : inflect.tableize(options.className);
 
     options.autoId = (opts.autoId != null) ? opts.autoId : true;
     options.timestamps = (opts.timestamps != null) ? opts.timestamps : true;
@@ -63,30 +66,31 @@ Model.prototype.init = function(callback) {
         adapter = this.adapter || this._collection._options.defaultAdapter,
         schema = this._schema;
 
-    each(schema._functions, function(options, name) {
+    forEach(schema._functions, function(options, name) {
         var hookFunc = hooks[name],
             hook;
 
-        if (!type.isFunction(hookFunc)) return;
+        if (!isFunction(hookFunc)) return;
 
-        hook = hookFunc(type.isObject(options) ? options : {});
+        hook = hookFunc(isObject(options) ? options : {});
 
-        each(hook.events, function(event, eventType) {
-            if (type.isArray(event)) {
-                each(event, function(e) {
+        forEach(hook.events, function(event, eventType) {
+            if (isArray(event)) {
+                forEach(event, function(e) {
                     _this.on(eventType, e);
                 });
-            } else if (type.isFunction(event)) {
+            } else if (isFunction(event)) {
                 _this.on(eventType, event);
             }
         });
     });
-    each(schema.columns, function(column, name) {
+
+    forEach(schema.columns, function(column, name) {
 
         _this.validates(name)[column.type]();
     });
 
-    if (type.isString(adapter)) {
+    if (isString(adapter)) {
         this.adapter = this._collection.adapter(adapter);
     } else {
         this.adapter = adapter;
@@ -104,7 +108,7 @@ Model.prototype.build = function(attributes) {
     var instance = new this.Class(),
         schema, columns, columnType, keys, key, attribute, i;
 
-    if (type.isObject(attributes)) {
+    if (isObject(attributes)) {
         schema = this._schema;
         columns = schema.columns;
         keys = schema._keys;
@@ -118,7 +122,7 @@ Model.prototype.build = function(attributes) {
             if (attribute != null) {
                 if (columnType === "datetime") {
                     instance[key] = (new Date(attribute)).toJSON();
-                } else if (columnType === "json" && type.isString(attribute)) {
+                } else if (columnType === "json" && isString(attribute)) {
                     try {
                         instance[key] = JSON.parse(attribute);
                     } catch (e) {
@@ -138,12 +142,12 @@ Model.prototype["new"] = Model.prototype.build;
 
 Model.prototype.create = function(attributes, callback) {
     var _this = this,
-        isPromise = !type.isFunction(callback),
+        isPromise = !isFunction(callback),
         model = this.build(attributes),
         defer;
 
     if (isPromise) {
-        defer = Promise.defer();
+        defer = PromisePolyfill.defer();
     }
 
     function resolve(row) {
@@ -207,11 +211,11 @@ Model.prototype.create = function(attributes, callback) {
 
 Model.prototype.save = function(model, callback) {
     var _this = this,
-        isPromise = !type.isFunction(callback),
+        isPromise = !isFunction(callback),
         defer;
 
     if (isPromise) {
-        defer = Promise.defer();
+        defer = PromisePolyfill.defer();
     }
 
     function resolve(row) {
@@ -275,11 +279,11 @@ Model.prototype.save = function(model, callback) {
 
 Model.prototype.update = function(id, model, callback) {
     var _this = this,
-        isPromise = !type.isFunction(callback),
+        isPromise = !isFunction(callback),
         defer;
 
     if (isPromise) {
-        defer = Promise.defer();
+        defer = PromisePolyfill.defer();
     }
 
     function resolve(row) {
@@ -344,13 +348,13 @@ Model.prototype.update = function(id, model, callback) {
 Model.prototype.find = function(query, callback) {
     var _this = this;
 
-    if (type.isFunction(query)) {
+    if (isFunction(query)) {
         callback = query;
         query = {};
     }
 
-    if (type.isFunction(callback)) {
-        if (!type.isObject(query)) query = {};
+    if (isFunction(callback)) {
+        if (!isObject(query)) query = {};
 
         if (query.where === undefined || query.where === null) {
             query.where = {};
@@ -373,13 +377,13 @@ Model.prototype.find = function(query, callback) {
 Model.prototype.findOne = function(query, callback) {
     var _this = this;
 
-    if (type.isFunction(query)) {
+    if (isFunction(query)) {
         callback = query;
         query = {};
     }
 
-    if (type.isFunction(callback)) {
-        if (!type.isObject(query)) query = {};
+    if (isFunction(callback)) {
+        if (!isObject(query)) query = {};
 
         if (query.where === undefined || query.where === null) {
             query.where = {};
@@ -403,19 +407,19 @@ Model.prototype.destroy = function(query, callback) {
     var _this = this,
         beforeDestroy;
 
-    if (type.isFunction(query)) {
+    if (isFunction(query)) {
         callback = query;
         query = {};
     }
 
-    if (type.isFunction(callback)) {
+    if (isFunction(callback)) {
         beforeDestroy = function beforeDestroy(err) {
             if (err) {
                 callback(err);
                 return;
             }
 
-            if (!type.isObject(query)) query = {};
+            if (!isObject(query)) query = {};
 
             if (query.where === undefined || query.where === null) {
                 query.where = {};
@@ -467,7 +471,7 @@ Model.prototype.validates = function(columnName) {
     if (!wrapper) {
         wrapper = wrappers[columnName] = {};
 
-        each(validator.rules, function(rule, ruleName) {
+        forEach(validator.rules, function(rule, ruleName) {
             wrapper[ruleName] = function() {
                 validation[inflect.underscore(ruleName)] = arguments.length > 0 ? slice.call(arguments) : true;
                 return wrapper;
@@ -575,7 +579,7 @@ function Model_toModels(_this, array) {
 function Model_generateClassAttributes(_this) {
     var out = [];
 
-    each(_this._schema.columns, function(_, key) {
+    forEach(_this._schema.columns, function(_, key) {
         out.push("\tthis." + key + " = null;");
     });
 

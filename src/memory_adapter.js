@@ -1,6 +1,10 @@
-var utils = require("utils"),
-    type = require("type"),
-    each = require("each");
+var keys = require("keys"),
+    indexOf = require("index_of"),
+    extend = require("extend"),
+    isDate = require("is_date"),
+    isObject = require("is_object"),
+    forEach = require("for_each"),
+    map = require("map");
 
 
 function buildSort(columns, key, order) {
@@ -46,8 +50,8 @@ function queryAll(columns, array, query) {
         il = array.length,
 
         where = query.where,
-        keys = utils.keys(where),
-        length = keys.length,
+        objectKeys = keys(where),
+        length = objectKeys.length,
 
         results = [],
         k = 0,
@@ -63,7 +67,7 @@ function queryAll(columns, array, query) {
 
         j = length;
         while (j-- && pass) {
-            key = keys[j];
+            key = objectKeys[j];
             pass = compare(columns[key], item[key], where[key]);
         }
 
@@ -91,8 +95,8 @@ function queryOne(columns, array, query) {
         il = array.length,
 
         where = query.where,
-        keys = utils.keys(where),
-        length = keys.length,
+        objectKeys = keys(where),
+        length = objectKeys.length,
 
         item, pass, j, key;
 
@@ -102,7 +106,7 @@ function queryOne(columns, array, query) {
 
         j = length;
         while (j-- && pass) {
-            key = keys[j];
+            key = objectKeys[j];
             pass = compare(columns[key], item[key], where[key]);
         }
 
@@ -129,7 +133,7 @@ function compare(column, value, whereValue) {
     var columnType = column.type,
         key;
 
-    if (type.isObject(whereValue)) {
+    if (isObject(whereValue)) {
         var pass = true;
 
         for (key in whereValue) {
@@ -160,10 +164,10 @@ var conditions = {
         return a <= b;
     },
     "in": function(a, b) {
-        return utils.indexOf(b, a) !== -1;
+        return indexOf(b, a) !== -1;
     },
     inq: function(a, b) {
-        return utils.indexOf(b, a) !== -1;
+        return indexOf(b, a) !== -1;
     },
     ne: function(a, b) {
         return a !== b;
@@ -172,7 +176,7 @@ var conditions = {
         return a !== b;
     },
     nin: function(a, b) {
-        return utils.indexOf(b, a) === -1;
+        return indexOf(b, a) === -1;
     }
 };
 
@@ -190,12 +194,12 @@ MemoryAdapter.prototype.init = function(callback) {
 
     process.nextTick(function() {
         if (schema) {
-            each(schema.tables, function(tableSchema, tableName) {
+            forEach(schema.tables, function(tableSchema, tableName) {
                 var counters = {},
                     uniques = {};
 
-                each(tableSchema.columns, function(column, columnName) {
-                    each(column, function(value, key) {
+                forEach(tableSchema.columns, function(column, columnName) {
+                    forEach(column, function(value, key) {
                         if (key === "autoIncrement") {
                             counters[columnName] = 1;
                         } else if (key === "unique") {
@@ -228,11 +232,12 @@ MemoryAdapter.prototype.save = function(tableName, params, callback) {
         columns = table.schema.columns;
 
     process.nextTick(function() {
-        var rows = table.rows,
+        var counters = table.counters,
+            rows = table.rows,
             row = {},
             err;
 
-        each(table.uniques, function(_, key) {
+        forEach(table.uniques, function(_, key) {
             if (isUnique(rows, key, params[key]) === false) {
                 err = new Error(
                     "MemoryAdapter save(tableName, params, callback) table " + tableName + " already has a row where " + key + " = " + params[key]
@@ -247,11 +252,11 @@ MemoryAdapter.prototype.save = function(tableName, params, callback) {
             return;
         }
 
-        each(table.counters, function(counter, key, counters) {
-            params[key] = counters[key]++;
+        forEach(counters, function(counter, key) {
+            params[key] = counters[key] ++;
         });
 
-        each(table.schema._keys, function(key) {
+        forEach(table.schema._keys, function(key) {
             var value = params[key],
                 columnType = columns[key].type;
 
@@ -259,7 +264,7 @@ MemoryAdapter.prototype.save = function(tableName, params, callback) {
                 row[key] = null;
             } else {
                 if (columnType === "datetime") {
-                    row[key] = type.isDate(value) ? value.toJSON() : (new Date(value).toJSON());
+                    row[key] = isDate(value) ? value.toJSON() : (new Date(value).toJSON());
                 } else {
                     row[key] = value;
                 }
@@ -290,7 +295,7 @@ MemoryAdapter.prototype.update = function(tableName, id, params, callback) {
             return;
         }
 
-        each(table.uniques, function(_, key) {
+        forEach(table.uniques, function(_, key) {
             if (isUnique(rows, key, params[key], id) === false) {
                 err = new Error(
                     "MemoryAdapter update(tableName, id, params, callback) table " + tableName + " already has a row where " + key + " = " + params[key]
@@ -305,19 +310,19 @@ MemoryAdapter.prototype.update = function(tableName, id, params, callback) {
             return;
         }
 
-        each(table.schema._keys, function(key) {
+        forEach(table.schema._keys, function(key) {
             var value = params[key];
 
             if (value != null) {
                 if (columns[key].type === "datetime") {
-                    row[key] = type.isDate(value) ? value.toJSON() : (new Date(value).toJSON());
+                    row[key] = isDate(value) ? value.toJSON() : (new Date(value).toJSON());
                 } else {
                     row[key] = value;
                 }
             }
         });
 
-        callback(undefined, utils.copy(row));
+        callback(undefined, extend({}, row));
     });
     return this;
 };
@@ -328,7 +333,9 @@ MemoryAdapter.prototype.find = function(tableName, query, callback) {
     process.nextTick(function() {
         var rows = queryAll(table.schema.columns, table.rows, query);
 
-        callback(undefined, each.map(rows, utils.copy));
+        callback(undefined, map(rows, function(row) {
+            return extend({}, row);
+        }));
     });
     return this;
 };
@@ -339,7 +346,7 @@ MemoryAdapter.prototype.findOne = function(tableName, query, callback) {
     process.nextTick(function() {
         var row = queryOne(table.schema.columns, table.rows, query);
 
-        callback(undefined, utils.copy(row));
+        callback(undefined, extend({}, row));
     });
     return this;
 };
@@ -362,9 +369,9 @@ MemoryAdapter.prototype.destroy = function(tableName, query, callback) {
 
         while (i--) {
             row = results[i];
-            rows.splice(utils.indexOf(rows, row), 1);
+            rows.splice(indexOf(rows, row), 1);
 
-            out.push(utils.copy(row));
+            out.push(extend({}, row));
         }
 
         callback(undefined, out);

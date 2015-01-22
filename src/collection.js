@@ -1,9 +1,9 @@
 var EventEmitter = require("event_emitter"),
-    type = require("type"),
-    each = require("each"),
-    utils = require("utils"),
-    Schema = require("./schema"),
+    isObject = require("is_object"),
+    forEach = require("for_each"),
+    keys = require("keys"),
 
+    Schema = require("./schema"),
     Model = require("./model");
 
 
@@ -14,7 +14,7 @@ function Collection(opts) {
 
     options.schema = opts.schema;
     options.adapters = opts.adapters;
-    options.defaultAdapter = opts.defaultAdapter || utils.keys(opts.adapters)[0];
+    options.defaultAdapter = opts.defaultAdapter || keys(opts.adapters)[0];
 
     EventEmitter.call(this);
 
@@ -26,7 +26,7 @@ function Collection(opts) {
 
     this.models = {};
 
-    if (type.isObject(options.adapters)) {
+    if (isObject(options.adapters)) {
         this.bindAdapters(options.adapters);
     }
 }
@@ -53,7 +53,7 @@ Collection.prototype.init = function(callback) {
 
     this._schema.init();
 
-    each(this.models, function(model) {
+    forEach(this.models, function(model) {
         var callback = createCallback();
 
         process.nextTick(function() {
@@ -61,7 +61,7 @@ Collection.prototype.init = function(callback) {
         });
     });
 
-    each(this._adapters, function(adapter) {
+    forEach(this._adapters, function(adapter) {
         var callback = createCallback();
 
         process.nextTick(function() {
@@ -74,7 +74,7 @@ Collection.prototype.init = function(callback) {
 
 Collection.prototype.close = function() {
 
-    each(this._adapters, function(adapter) {
+    forEach(this._adapters, function(adapter) {
 
         adapter.close();
     });
@@ -103,14 +103,14 @@ Collection.prototype.bindAdapter = function(name, adapter) {
 Collection.prototype.bindAdapters = function(adapters) {
     var _this = this;
 
-    if (!type.isObject(adapters)) {
+    if (!isObject(adapters)) {
         throw new Error(
             "Collection.bindAdapters(adapters)\n" +
             "    adapters must be a Object ex {'memory': new MemoryAdapter(), 'mysql': new MySQLAdapter()}"
         );
     }
 
-    each(adapters, function(adapter, name) {
+    forEach(adapters, function(adapter, name) {
 
         Collection_bindAdapter(_this, name, adapter);
     });

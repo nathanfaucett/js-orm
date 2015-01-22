@@ -1,5 +1,6 @@
-var type = require("type"),
-    each = require("each"),
+var isObject = require("is_object"),
+    isArray = require("is_array"),
+    forEach = require("for_each"),
     inflect = require("inflect");
 
 
@@ -9,7 +10,7 @@ var functions = module.exports;
 functions.autoId = function(schema, table, options) {
     var value = {};
 
-    options = type.isObject(options) ? options : {};
+    options = isObject(options) ? options : {};
 
     value.type = options.type || "integer";
     if (options.primaryKey !== false) value.primaryKey = true;
@@ -22,7 +23,7 @@ functions.timestamps = function(schema, table, options) {
     var createdAt = "createdAt",
         updatedAt = "updatedAt";
 
-    if (type.isObject(options)) {
+    if (isObject(options)) {
         if (options.underscore === true || options.camelcase === false) {
             createdAt = "created_at";
             updatedAt = "updated_at";
@@ -36,14 +37,14 @@ functions.timestamps = function(schema, table, options) {
 functions.hasMany = function(schema, table, options) {
     var model, columnName;
 
-    if (type.isArray(options)) {
-        each(options, function(value) {
+    if (isArray(options)) {
+        forEach(options, function(value) {
             functions.hasMany(schema, table, value);
         });
         return;
     }
 
-    options = type.isObject(options) ? options : {
+    options = isObject(options) ? options : {
         collection: options + ""
     };
 
@@ -65,14 +66,14 @@ functions.hasMany = function(schema, table, options) {
 functions.hasOne = function(schema, table, options) {
     var model, columnName;
 
-    if (type.isArray(options)) {
-        each(options, function(value) {
+    if (isArray(options)) {
+        forEach(options, function(value) {
             functions.hasOne(schema, table, value);
         });
         return;
     }
 
-    options = type.isObject(options) ? options : {
+    options = isObject(options) ? options : {
         model: options + ""
     };
 
@@ -95,14 +96,14 @@ functions.hasOne = function(schema, table, options) {
 functions.belongsTo = function(schema, table, options) {
     var model, columnName;
 
-    if (type.isArray(options)) {
-        each(options, function(value) {
+    if (isArray(options)) {
+        forEach(options, function(value) {
             functions.belongsTo(schema, table, value);
         });
         return;
     }
 
-    options = type.isObject(options) ? options : {
+    options = isObject(options) ? options : {
         model: options + ""
     };
 

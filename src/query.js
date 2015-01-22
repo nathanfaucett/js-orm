@@ -1,5 +1,5 @@
-var Promise = require("promise"),
-    utils = require("utils");
+var PromisePolyfill = require("promise_polyfill"),
+    extend = require("extend");
 
 
 function Query(model, action, conditions) {
@@ -9,7 +9,7 @@ function Query(model, action, conditions) {
 
     this._currentKey = false;
 
-    this._conditions = utils.extend({}, conditions.where);
+    this._conditions = extend({}, conditions.where);
 
     delete conditions.where;
     this._params = conditions;
@@ -146,8 +146,8 @@ Query.prototype.desc = function(value) {
 };
 
 Query.prototype.exec = function(callback) {
-    var query = utils.extend({
-        where: utils.extend({}, this._conditions)
+    var query = extend({
+        where: extend({}, this._conditions)
     }, this._params);
 
     this._model[this._action](query, callback);
@@ -156,9 +156,9 @@ Query.prototype.exec = function(callback) {
 Query.prototype.run = Query.prototype.exec;
 
 Query.prototype.then = function(onFulfill, onReject) {
-    var defer = Promise.defer(),
-        query = utils.extend({
-            where: utils.extend({}, this._conditions)
+    var defer = PromisePolyfill.defer(),
+        query = extend({
+            where: extend({}, this._conditions)
         }, this._params);
 
     this._model[this._action](query, function(err, result) {

@@ -1,5 +1,5 @@
-var each = require("each"),
-    utils = require("utils"),
+var forEach = require("for_each"),
+    keys = require("keys"),
 
     Table = require("./table");
 
@@ -23,11 +23,11 @@ function Schema(opts) {
 Schema.prototype.init = function() {
     var tables = this.tables;
 
-    each(tables, function(table) {
+    forEach(tables, function(table) {
         table.init();
     });
-    each(tables, function(table) {
-        table._keys = utils.keys(table.columns);
+    forEach(tables, function(table) {
+        table._keys = keys(table.columns);
     });
 
     return this;
@@ -106,7 +106,7 @@ Schema.prototype.add = function(table) {
 Schema.prototype.toJSON = function() {
     var json = {};
 
-    each(this.tables, function(table, tableName) {
+    forEach(this.tables, function(table, tableName) {
         json[tableName] = table.toJSON();
     });
 
@@ -117,7 +117,7 @@ Schema.prototype.fromJSON = function(json) {
     var _this = this,
         options = this._options;
 
-    each(json, function(columns, tableName) {
+    forEach(json, function(columns, tableName) {
         var opts = options[tableName];
 
         if (opts) {
