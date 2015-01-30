@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+require("inflections_en");
+
 var filePath = require("file_path"),
     utils = require("utils"),
     migrations = require("./migrations"),

@@ -1,3 +1,6 @@
+require("inflections_en");
+
+
 var Collection = require("./collection"),
     Model = require("./model");
 
