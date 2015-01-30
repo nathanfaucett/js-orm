@@ -1,4 +1,4 @@
-var orm = require("../src/index.js");
+var orm = require("../src/index");
 
 
 module.exports = orm({
