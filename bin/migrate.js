@@ -57,8 +57,12 @@ function prettyArgs(args) {
 function filterColumns(_this, tableName, columns, options) {
     var out = {};
 
-    if (_this._options.autoId && !columns.autoId) columns.autoId = _this._options.autoId;
-    if (_this._options.timestamps && !columns.timestamps) columns.timestamps = _this._options.timestamps;
+    if (_this._options.autoId && !columns.autoId) {
+        columns.autoId = _this._options.autoId;
+    }
+    if (_this._options.timestamps && !columns.timestamps) {
+        columns.timestamps = _this._options.timestamps;
+    }
 
     each(columns, function(attributes, columnName) {
 
@@ -86,10 +90,14 @@ function filterAttributes(_this, tableName, columnName, attributes) {
     each(attributes, function(value, key) {
         if (key === "type") {
             coerced = Table.coerceType(value);
-            if (utils.indexOf(Table.types, coerced) === -1) return;
+            if (utils.indexOf(Table.types, coerced) === -1) {
+                return;
+            }
             out[key] = coerced;
         } else {
-            if (utils.indexOf(Table.allowed, key) === -1) return;
+            if (utils.indexOf(Table.allowed, key) === -1) {
+                return;
+            }
             out[key] = true;
         }
     });

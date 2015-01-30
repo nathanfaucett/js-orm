@@ -4,7 +4,8 @@ var EventEmitter = require("event_emitter"),
     isFunction = require("is_function"),
     isObject = require("is_object"),
     isArray = require("is_array"),
-    inflect = require("inflect"),
+    tableize = require("tableize"),
+    underscore = require("underscore"),
     PromisePolyfill = require("promise_polyfill"),
     validator = require("validator"),
 
@@ -32,7 +33,7 @@ function Model(opts) {
     options.functions = opts.functions;
 
     options.className = opts.name || opts.className;
-    options.tableName = isString(opts.tableName) ? opts.tableName : inflect.tableize(options.className);
+    options.tableName = isString(opts.tableName) ? opts.tableName : tableize(options.className);
 
     options.autoId = (opts.autoId != null) ? opts.autoId : true;
     options.timestamps = (opts.timestamps != null) ? opts.timestamps : true;
@@ -70,7 +71,9 @@ Model.prototype.init = function(callback) {
         var hookFunc = hooks[name],
             hook;
 
-        if (!isFunction(hookFunc)) return;
+        if (!isFunction(hookFunc)) {
+            return;
+        }
 
         hook = hookFunc(isObject(options) ? options : {});
 
@@ -354,7 +357,9 @@ Model.prototype.find = function(query, callback) {
     }
 
     if (isFunction(callback)) {
-        if (!isObject(query)) query = {};
+        if (!isObject(query)) {
+            query = {};
+        }
 
         if (query.where === undefined || query.where === null) {
             query.where = {};
@@ -383,7 +388,9 @@ Model.prototype.findOne = function(query, callback) {
     }
 
     if (isFunction(callback)) {
-        if (!isObject(query)) query = {};
+        if (!isObject(query)) {
+            query = {};
+        }
 
         if (query.where === undefined || query.where === null) {
             query.where = {};
@@ -419,7 +426,9 @@ Model.prototype.destroy = function(query, callback) {
                 return;
             }
 
-            if (!isObject(query)) query = {};
+            if (!isObject(query)) {
+                query = {};
+            }
 
             if (query.where === undefined || query.where === null) {
                 query.where = {};
@@ -473,7 +482,7 @@ Model.prototype.validates = function(columnName) {
 
         forEach(validator.rules, function(rule, ruleName) {
             wrapper[ruleName] = function() {
-                validation[inflect.underscore(ruleName)] = arguments.length > 0 ? slice.call(arguments) : true;
+                validation[underscore(ruleName)] = arguments.length > 0 ? slice.call(arguments) : true;
                 return wrapper;
             };
         });
@@ -572,7 +581,9 @@ Model.prototype.generateClass = function() {
 function Model_toModels(_this, array) {
     var i = array.length;
 
-    while (i--) array[i] = _this.build(array[i]);
+    while (i--) {
+        array[i] = _this.build(array[i]);
+    }
     return array;
 }
 

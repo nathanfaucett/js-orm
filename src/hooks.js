@@ -18,11 +18,19 @@ hooks.timestamps = function(options) {
             },
             beforeSave: function(values, next) {
                 if (underscore) {
-                    if (values.created_at == null) values.created_at = new Date();
-                    if (values.updated_at == null) values.updated_at = new Date();
+                    if (values.created_at == null) {
+                        values.created_at = new Date();
+                    }
+                    if (values.updated_at == null) {
+                        values.updated_at = new Date();
+                    }
                 } else {
-                    if (values.createdAt == null) values.createdAt = new Date();
-                    if (values.updatedAt == null) values.updatedAt = new Date();
+                    if (values.createdAt == null) {
+                        values.createdAt = new Date();
+                    }
+                    if (values.updatedAt == null) {
+                        values.updatedAt = new Date();
+                    }
                 }
                 next();
             },

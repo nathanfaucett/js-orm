@@ -83,7 +83,9 @@ function Table(tableName, opts) {
 
     this.columns = {};
 
-    if (opts.columns) this.addColumns(opts.columns);
+    if (opts.columns) {
+        this.addColumns(opts.columns);
+    }
 }
 
 Table.coerceType = coerceType;
@@ -97,15 +99,17 @@ Table.prototype.init = function() {
         schema = this.schema,
         columns = this.columns;
 
-    if (options.autoId) this.add("autoId", options.autoId);
-    if (options.timestamps) this.add("timestamps", options.timestamps);
+    if (options.autoId) {
+        this.add("autoId", options.autoId);
+    }
+    if (options.timestamps) {
+        this.add("timestamps", options.timestamps);
+    }
 
     forEach(this._defines, function(column, columnName) {
-
         columns[columnName] = extend({}, column);
     });
     forEach(this._functions, function(opts, functionName) {
-
         options.functions[functionName](schema, _this, opts);
     });
 

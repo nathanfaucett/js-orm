@@ -124,7 +124,9 @@ function isUnique(array, key, value, id) {
 
     while (i--) {
         row = array[i];
-        if (row[key] === value && (id ? row.id !== id : true)) return false;
+        if (row[key] === value && (id ? row.id !== id : true)) {
+            return false;
+        }
     }
     return true;
 }

@@ -212,7 +212,9 @@ function cleanMigrations(array, before, after) {
     }
 
     i = remove.length;
-    while (i--) array.splice(remove[i], 1);
+    while (i--) {
+        array.splice(remove[i], 1);
+    }
 }
 
 function sortTasks(a, b) {

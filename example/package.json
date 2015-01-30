@@ -3,8 +3,6 @@
   "version": "0.0.1",
   "description": "example",
   "dependencies": {
-    "mongodb": "^1.4.19",
-    "sqlite3": "^3.0.0",
     "sqlite3_adapter": "nathanfaucett/sqlite3_adapter",
     "mongodb_adapter": "nathanfaucett/mongodb_adapter"
   }

@@ -1,7 +1,10 @@
 var isObject = require("is_object"),
     isArray = require("is_array"),
     forEach = require("for_each"),
-    inflect = require("inflect");
+
+    foreignKey = require("foreign_key"),
+    singularize = require("singularize"),
+    pluralize = require("pluralize");
 
 
 var functions = module.exports;
@@ -13,8 +16,12 @@ functions.autoId = function(schema, table, options) {
     options = isObject(options) ? options : {};
 
     value.type = options.type || "integer";
-    if (options.primaryKey !== false) value.primaryKey = true;
-    if (options.autoIncrement !== false) value.autoIncrement = true;
+    if (options.primaryKey !== false) {
+        value.primaryKey = true;
+    }
+    if (options.autoIncrement !== false) {
+        value.autoIncrement = true;
+    }
 
     table.functionAdd(options.key || "id", value);
 };
@@ -50,8 +57,8 @@ functions.hasMany = function(schema, table, options) {
 
     model = schema.table(options.collection);
 
-    columnName = inflect.foreignKey(
-        inflect.singularize(table.tableName, options.locale),
+    columnName = foreignKey(
+        singularize(table.tableName, options.locale),
         options.key || "id",
         options.underscore === false || options.camelcase === true || true,
         options.lowFirstLetter != null ? !!options.lowFirstLetter : true
@@ -77,10 +84,10 @@ functions.hasOne = function(schema, table, options) {
         model: options + ""
     };
 
-    model = schema.table(inflect.pluralize(options.model, options.locale));
+    model = schema.table(pluralize(options.model, options.locale));
 
-    columnName = inflect.foreignKey(
-        inflect.singularize(table.tableName, options.locale),
+    columnName = foreignKey(
+        singularize(table.tableName, options.locale),
         options.key || "id",
         options.underscore === false || options.camelcase === true || true,
         options.lowFirstLetter != null ? !!options.lowFirstLetter : true
@@ -107,9 +114,9 @@ functions.belongsTo = function(schema, table, options) {
         model: options + ""
     };
 
-    model = schema.table(inflect.pluralize(options.model, options.locale));
+    model = schema.table(pluralize(options.model, options.locale));
 
-    columnName = inflect.foreignKey(
+    columnName = foreignKey(
         options.model,
         options.key || "id",
         options.underscore === false || options.camelcase === true || true,
